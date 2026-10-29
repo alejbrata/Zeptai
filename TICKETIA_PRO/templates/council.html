@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% block title %}Consejo Pyme — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 pb-24 max-w-2xl mx-auto w-full">
+
+    <!-- Header -->
+    <header class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">El Consejo Pyme</h1>
+            <p class="text-slate-500 text-sm">Tu equipo de estrategas personal</p>
+        </div>
+        <a href="{{ url_for('web.dashboard') }}" class="text-slate-400 hover:text-slate-600">✕</a>
+    </header>
+
+    <!-- Council Members (Avatars) -->
+    <div class="flex justify-center gap-6 mb-8 px-4" role="group" aria-label="Miembros del Consejo">
+        <!-- Socio -->
+        <div class="flex flex-col items-center transition-all duration-300" id="avatar-socio" data-agent="socio" aria-label="El Socio — Ventas">
+            <div class="relative w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center text-3xl shadow-sm border-2 border-rose-200 transition-all duration-300" id="avatar-ring-socio">
+                🐯
+                <!-- Speaking indicator (hidden by default) -->
+                <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-rose-500 rounded-full border-2 border-white hidden" id="dot-socio" aria-hidden="true"></span>
+            </div>
+            <span class="text-xs font-bold text-rose-800 mt-2">El Socio</span>
+            <span class="text-[10px] text-rose-600 font-medium bg-rose-50 px-1.5 rounded" id="role-socio">Ventas</span>
+        </div>
+        <!-- Gestor -->
+        <div class="flex flex-col items-center transition-all duration-300" id="avatar-gestor" data-agent="gestor" aria-label="El Gestor — Fiscal">
+            <div class="relative w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center text-3xl shadow-sm border-2 border-amber-200 transition-all duration-300" id="avatar-ring-gestor">
+                🦉
+                <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-amber-500 rounded-full border-2 border-white hidden" id="dot-gestor" aria-hidden="true"></span>
+            </div>
+            <span class="text-xs font-bold text-amber-900 mt-2">El Gestor</span>
+            <span class="text-[10px] text-amber-700 font-medium bg-amber-50 px-1.5 rounded" id="role-gestor">Fiscal</span>
+        </div>
+        <!-- Coach -->
+        <div class="flex flex-col items-center transition-all duration-300" id="avatar-coach" data-agent="coach" aria-label="El Coach — Productividad">
+            <div class="relative w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-3xl shadow-sm border-2 border-indigo-200 transition-all duration-300" id="avatar-ring-coach">
+                🚀
+                <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-indigo-500 rounded-full border-2 border-white hidden" id="dot-coach" aria-hidden="true"></span>
+            </div>
+            <span class="text-xs font-bold text-indigo-800 mt-2">El Coach</span>
+            <span class="text-[10px] text-indigo-600 font-medium bg-indigo-50 px-1.5 rounded" id="role-coach">Productividad</span>
+        </div>
+    </div>
+
+    <!-- Topic Banner (aparece al enviar el dilema) -->
+    <div id="topic-banner" class="hidden mb-4 bg-slate-800 text-white px-4 py-3 rounded-2xl flex items-start gap-3">
+        <span class="text-lg mt-0.5">💬</span>
+        <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Dilema a debate</p>
+            <p id="topic-text" class="text-sm font-semibold leading-snug"></p>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chat-container" class="space-y-4 mb-20 p-2">
+        <!-- Welcome Message -->
+        <div class="bg-indigo-50 p-4 rounded-xl rounded-tl-none border border-indigo-100 max-w-[85%]">
+            <p class="text-sm text-indigo-900 leading-relaxed">
+                👋 <strong>Bienvenido a la Sala de Juntas.</strong><br>
+                Soy tu Coordinador. Hoy te acompañan El Socio 🐯, El Gestor 🦉 y El Coach 🚀.
+                <br><br>
+                Cuéntanos, <strong>¿qué dilema tienes hoy?</strong>
+                <br>
+                <em class="text-xs text-indigo-400">Ej: "¿Debería contratar a un empleado?", "Quiero vender más en
+                    Instagram".</em>
+            </p>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 pt-3" style="padding-bottom: max(env(safe-area-inset-bottom), 12px);">
+        <div class="max-w-2xl mx-auto flex gap-2 pb-1">
+            <input type="text" id="userInput"
+                class="flex-1 bg-slate-100 border-0 rounded-full px-5 py-3 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 placeholder-slate-400"
+                placeholder="Escribe tu problema..."
+                aria-label="Escribe el tema a debatir con el Consejo">
+            <button id="sendBtn" onclick="startSession()"
+                aria-label="Enviar al Consejo"
+                class="bg-indigo-600 text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-transform active:scale-95">
+                ➤
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    async function startSession(retryTopic) {
+        const input = document.getElementById('userInput');
+        const topic = retryTopic || input.value.trim();
+        if (!topic) return;
+
+        // 1. Mostrar dilema en el banner fijo y limpiar chat anterior
+        if (!retryTopic) {
+            document.getElementById('topic-text').textContent = topic;
+            document.getElementById('topic-banner').classList.remove('hidden');
+            document.getElementById('chat-container').innerHTML = '';
+        }
+        input.value = '';
+        input.disabled = true;
+        document.getElementById('sendBtn').disabled = true;
+
+        // 2. Start Stream
+        try {
+            const response = await fetch('/api/council/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: topic })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';  // acumula datos entre chunks
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                // Procesar solo líneas completas (terminadas en \n)
+                const lines = buffer.split('\n');
+                // La última parte puede estar incompleta — la guardamos para el próximo chunk
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(trimmed.substring(6));
+                            handleEvent(data);
+                        } catch (e) {
+                            console.error("Error parsing SSE line:", trimmed, e);
+                        }
+                    }
+                }
+            }
+
+            // Procesar lo que quede en el buffer al cerrar
+            if (buffer.trim().startsWith('data: ')) {
+                try {
+                    handleEvent(JSON.parse(buffer.trim().substring(6)));
+                } catch (_) {}
+            }
+
+            addMessage('system', "Sesion finalizada. Escribe otro tema para continuar.");
+            input.disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            input.focus();
+
+        } catch (e) {
+            console.error(e);
+            showCouncilError("Error de conexion con el Consejo. Revisa tu red e intenta de nuevo.", topic);
+            input.disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+        }
+    }
+
+    function handleEvent(data) {
+        console.log('[Council]', data.type, data.agent || '', (data.text || '').substring(0, 40));
+        if (data.type === 'typing') {
+            highlightAvatar(data.agent);
+            showTyping(data.agent, data.name, data.emoji);
+        } else if (data.type === 'message') {
+            removeTyping(data.agent);
+            highlightAvatar(data.agent);
+            addAgentMessage(data.agent, data.text, data.name, data.emoji, data.round);
+        } else if (data.type === 'divider') {
+            addDivider(data.text);
+        } else if (data.type === 'plan') {
+            removeTyping('system');
+            highlightAvatar(null);
+            addPlan(data.text);
+        } else if (data.type === 'error') {
+            removeTyping('system');
+            addMessage('system', '❌ Error: ' + data.text);
+        }
+    }
+
+    function addDivider(text) {
+        const container = document.getElementById('chat-container');
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-3 my-4';
+        div.innerHTML = `
+            <div class="flex-1 h-px bg-slate-200"></div>
+            <span class="text-xs font-bold text-slate-400 whitespace-nowrap">${escapeHtml(text)}</span>
+            <div class="flex-1 h-px bg-slate-200"></div>
+        `;
+        container.appendChild(div);
+        container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function showTyping(agent, name, emoji) {
+        removeTyping(agent); // evitar duplicados
+        const container = document.getElementById('chat-container');
+        const div = document.createElement('div');
+        div.id = `typing-${agent}`;
+        div.className = 'flex justify-start animate-fade-in-up';
+
+        const colorClass = agent === 'socio' ? 'bg-rose-50 border-rose-100' :
+                           agent === 'gestor' ? 'bg-slate-50 border-slate-100' :
+                           agent === 'system' ? 'bg-indigo-50 border-indigo-100' :
+                           'bg-indigo-50 border-indigo-100';
+
+        div.innerHTML = `
+            <div class="${colorClass} px-4 py-3 rounded-xl rounded-tl-none border max-w-[85%] shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">${escapeHtml(emoji || '📝')}</span>
+                    <span class="text-xs font-bold opacity-60">${escapeHtml(name || 'Secretario')}</span>
+                    <span class="text-xs text-slate-400 italic">escribiendo</span>
+                    <span class="flex gap-0.5 items-center">
+                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+                    </span>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+        container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function removeTyping(agent) {
+        const el = document.getElementById(`typing-${agent}`);
+        if (el) el.remove();
+    }
+
+    function highlightAvatar(agentKey) {
+        const ringColors = {
+            socio:  'border-rose-500',
+            gestor: 'border-amber-500',
+            coach:  'border-indigo-500',
+        };
+        ['socio', 'gestor', 'coach'].forEach(k => {
+            const ring = document.getElementById(`avatar-ring-${k}`);
+            const dot  = document.getElementById(`dot-${k}`);
+            const role = document.getElementById(`role-${k}`);
+            if (k === agentKey) {
+                // Active: scale up, colored thick border, dot visible, role tag visible
+                ring.classList.add('scale-110', 'border-4', ringColors[k], 'shadow-lg');
+                ring.classList.remove('border-2', 'opacity-40');
+                dot.classList.remove('hidden');
+                role.classList.add('font-bold');
+            } else {
+                // Inactive: smaller, thin border, desaturated (filter) instead of just opacity
+                ring.classList.remove('scale-110', 'border-4', ringColors[k], 'shadow-lg');
+                ring.classList.add('border-2', 'opacity-40');
+                dot.classList.add('hidden');
+                role.classList.remove('font-bold');
+            }
+        });
+    }
+
+    function addMessage(agent, text, name, emoji, round) {
+        const container = document.getElementById('chat-container');
+        const div = document.createElement('div');
+        if (agent === 'user') {
+            div.className = "flex justify-end";
+            div.innerHTML = `<div class="bg-indigo-600 text-white px-5 py-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-md"><p class="text-sm">${escapeHtml(text)}</p></div>`;
+        } else {
+            div.className = "flex justify-center";
+            div.innerHTML = `<span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">${escapeHtml(text)}</span>`;
+        }
+        container.appendChild(div);
+        container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function addAgentMessage(agent, text, name, emoji, round) {
+        const container = document.getElementById('chat-container');
+        const agentKey  = ['socio','gestor','coach'].includes(agent) ? agent : 'coach';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex justify-start mb-3 animate-fade-in-up';
+
+        const bubble = document.createElement('div');
+        bubble.className = `bubble-${agentKey} px-4 py-3.5 rounded-2xl rounded-tl-[4px] max-w-[85%] shadow-sm`;
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center gap-2 mb-2';
+        const replicaBadge = round === 2
+            ? '<span class="text-[9px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full">replica</span>'
+            : '';
+        header.innerHTML = `
+            <span class="text-xl">${escapeHtml(emoji || '💬')}</span>
+            <span class="text-[11px] font-bold badge-${agentKey} px-2 py-0.5 rounded-full">${escapeHtml(name || agent)}</span>
+            ${replicaBadge}`;
+
+        const body = document.createElement('p');
+        body.className = 'text-sm leading-relaxed m-0';
+        body.textContent = text;
+
+        bubble.appendChild(header);
+        bubble.appendChild(body);
+        wrapper.appendChild(bubble);
+        container.appendChild(wrapper);
+        container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function showCouncilError(msg, topic) {
+        const container = document.getElementById('chat-container');
+        const div = document.createElement('div');
+        div.className = 'flex justify-center my-4';
+        div.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 max-w-[90%] text-center">
+                <p class="text-sm text-red-700 font-medium mb-3">${escapeHtml(msg)}</p>
+                <button onclick="startSession(${JSON.stringify(topic)})"
+                    class="text-xs font-bold bg-red-600 text-white px-4 py-2 rounded-full hover:bg-red-700 transition-colors active:scale-95">
+                    Reintentar
+                </button>
+            </div>`;
+        container.appendChild(div);
+        container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function addPlan(markdownText) {
+        const container = document.getElementById('chat-container');
+        const div = document.createElement('div');
+        div.className = "bg-white p-6 rounded-2xl border-2 border-indigo-100 shadow-xl my-6 animate-fade-in-up";
+
+        // Escapar antes de aplicar el parser Markdown: el texto es la síntesis del LLM,
+        // influida por el "topic" y el debate previo (entrada de usuario no confiable).
+        let html = escapeHtml(markdownText)
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n- /g, '<br>• ');
+
+        div.innerHTML = `
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-2xl">📝</span>
+                <h3 class="text-lg font-bold text-slate-800">Plan de Acción Consensuado</h3>
+            </div>
+            <div class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">${html}</div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="window.print()" class="text-xs font-bold text-indigo-600 hover:underline">🖨️ Imprimir Plan</button>
+            </div>
+        `;
+
+        container.appendChild(div);
+        container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+</script>
+
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+
+    /* Agent bubble theme classes — replaces inline style.cssText */
+    .bubble-socio  { background:#fff1f2; border:1px solid #fecdd3; color:#881337; }
+    .bubble-gestor { background:#fffbeb; border:1px solid #fde68a; color:#78350f; }
+    .bubble-coach  { background:#eef2ff; border:1px solid #c7d2fe; color:#1e1b4b; }
+
+    .badge-socio  { background:#ffe4e6; color:#be123c; }
+    .badge-gestor { background:#fef3c7; color:#92400e; }
+    .badge-coach  { background:#e0e7ff; color:#3730a3; }
+</style>
+{% endblock %}

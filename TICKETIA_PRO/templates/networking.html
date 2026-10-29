@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Networking B2B — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 pb-24 max-w-2xl mx-auto w-full">
+
+    <header class="mb-8">
+        <a href="{{ url_for('web.dashboard') }}" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Inicio</a>
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight mt-2">🤝 Networking B2B</h1>
+        <p class="text-slate-500 mt-1 font-medium">Oportunidades de negocio detectadas por IA entre empresas de la plataforma</p>
+    </header>
+
+    <!-- Hero -->
+    <div class="bg-gradient-to-br from-violet-600 to-indigo-600 rounded-[2rem] p-7 mb-8 text-white relative overflow-hidden">
+        <div class="relative z-10">
+            <p class="text-violet-200 text-xs font-bold uppercase tracking-widest mb-2">Synergy Agent · GPT-4o</p>
+            <h2 class="text-xl font-bold mb-2">Tu agente busca aliados cada mañana</h2>
+            <p class="text-violet-100 text-sm leading-relaxed">
+                El Networker analiza los perfiles de todas las empresas de la plataforma y detecta
+                sinergias cliente-proveedor o alianzas estratégicas con un score de 0 a 100.
+                Solo notifica cuando supera 80/100.
+            </p>
+        </div>
+        <div class="absolute -bottom-8 -right-8 w-36 h-36 bg-indigo-500 rounded-full blur-3xl opacity-40"></div>
+    </div>
+
+    {% if matches %}
+        <div class="space-y-4">
+        {% for item in matches %}
+            {% set m = item.match %}
+            <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-6">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-700 font-bold text-lg flex-none">
+                            {{ item.partner_name[0] | upper }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-base">{{ item.partner_name }}</p>
+                            {% if item.partner_sector %}
+                            <p class="text-xs text-slate-400 font-medium">{{ item.partner_sector }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Score badge -->
+                    <div class="flex flex-col items-center flex-none">
+                        <div class="w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg
+                            {% if m.score >= 85 %}bg-emerald-100 text-emerald-700
+                            {% elif m.score >= 70 %}bg-amber-100 text-amber-700
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                            {{ m.score }}
+                        </div>
+                        <span class="text-[10px] text-slate-400 mt-1 font-medium">score</span>
+                    </div>
+                </div>
+
+                <!-- Razón IA -->
+                <div class="bg-violet-50 rounded-xl px-4 py-3 mb-4">
+                    <p class="text-sm text-violet-800 leading-relaxed">💡 {{ m.reason }}</p>
+                </div>
+
+                <!-- Botón contacto -->
+                {% if m.status == 'contacted' %}
+                <div class="flex items-center gap-2 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl px-4 py-2.5">
+                    <span>✅</span> Solicitud de contacto enviada
+                </div>
+                {% else %}
+                <button onclick="requestContact({{ m.id }}, this)"
+                    class="w-full bg-violet-600 hover:bg-violet-700 active:scale-95 text-white font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2">
+                    <span>📨</span> Solicitar Presentación
+                </button>
+                {% endif %}
+
+                <!-- Meta -->
+                <div class="flex items-center justify-between text-xs text-slate-400 mt-3">
+                    <span>Detectado {{ m.created_at.strftime('%d %b %Y') if m.created_at else '' }}</span>
+                    <span class="px-2 py-1 rounded-full bg-slate-100 font-medium">{{ m.status or 'suggested' }}</span>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+
+    {% else %}
+        <!-- Estado vacío -->
+        <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-10 text-center">
+            <div class="text-5xl mb-4">🔍</div>
+            <h3 class="font-bold text-slate-700 text-lg mb-2">El agente aún no ha detectado sinergias</h3>
+            <p class="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
+                El Networker se ejecuta cada mañana a las 09:00. Puedes lanzarlo manualmente
+                desde el Panel de Demo para ver cómo funciona.
+            </p>
+            <a href="{{ url_for('web.demo_panel') }}"
+                class="inline-block mt-6 bg-violet-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-violet-700 transition-colors text-sm">
+                Ir al Panel de Demo →
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function requestContact(matchId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="inline-block animate-spin">⚙️</span> Enviando...';
+
+    try {
+        const resp = await fetch(`/networking/contact/${matchId}`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.ok) {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl px-4 py-2.5';
+            div.innerHTML = '<span>✅</span> Solicitud de contacto enviada';
+            btn.replaceWith(div);
+        } else {
+            throw new Error(data.error || 'Error');
+        }
+    } catch(e) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>📨</span> Solicitar Presentación';
+        alert('Error al enviar. Inténtalo de nuevo.');
+    }
+}
+</script>
+{% endblock %}

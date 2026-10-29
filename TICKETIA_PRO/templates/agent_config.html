@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="px-6 py-8 pb-24 max-w-lg mx-auto w-full">
+
+    <a href="{{ url_for('web.marketplace') }}"
+        class="inline-flex items-center text-sm font-medium text-slate-400 hover:text-indigo-600 transition-colors mb-6">
+        ← Volver a la Tienda
+    </a>
+
+    <header class="mb-8">
+        <h1 class="text-2xl font-bold text-slate-800">⚙️ Configurar: {{ agent_name }}</h1>
+        <p class="text-slate-500 text-sm mt-1">Ajusta el comportamiento de tu agente.</p>
+    </header>
+
+    <form action="{{ url_for('web.save_agent_config', agent_id=agent_id) }}" method="POST"
+        class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
+
+        {% if agent_id == 'post_sales_service' %}
+
+        <!-- Opción 1: Feedback -->
+        <div class="flex items-start justify-between">
+            <div>
+                <h3 class="font-bold text-slate-700">Solicitar Feedback (24h)</h3>
+                <p class="text-xs text-slate-400 mt-1 max-w-[250px]">
+                    Envía un WhatsApp automático 1 día después de la cita preguntando qué tal fue.
+                </p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="enable_feedback" class="sr-only peer" {% if config.get('enable_feedback')
+                    %}checked{% endif %}>
+                <div
+                    class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                </div>
+            </label>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Opción 2: Reactivación -->
+        <div class="flex items-start justify-between">
+            <div>
+                <h3 class="font-bold text-slate-700">Reactivación & Descuentos (90 días)</h3>
+                <p class="text-xs text-slate-400 mt-1 max-w-[250px]">
+                    Detecta clientes perdidos (3 meses) y les envía una oferta para que vuelvan.
+                </p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="enable_reactivation" class="sr-only peer" {% if
+                    config.get('enable_reactivation') %}checked{% endif %}>
+                <div
+                    class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                </div>
+            </label>
+        </div>
+
+        <!-- NEW: Opciones del Mensaje de Reactivación -->
+        <div class="bg-indigo-50 p-4 rounded-xl space-y-3 border border-indigo-100 mt-2">
+            <label class="block text-xs font-bold text-indigo-900 uppercase">¿Qué quieres ofrecer?</label>
+            <select name="offer_type"
+                class="w-full bg-white border border-indigo-200 text-indigo-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                <option value="10% de Descuento" {% if config.get('offer_type')=='10% de Descuento' %}selected{% endif
+                    %}>🎟️ 10% de Descuento</option>
+                <option value="Regalo Especial" {% if config.get('offer_type')=='Regalo Especial' %}selected{% endif %}>
+                    🎁 Un Regalo / Postre Gratis</option>
+                <option value="2x1" {% if config.get('offer_type')=='2x1' %}selected{% endif %}>✌️ 2x1 en tu visita
+                </option>
+                <option value="Custom" {% if config.get('offer_type')=='Custom' %}selected{% endif %}>✍️ Personalizado
+                    (Escribir abajo)</option>
+            </select>
+
+            <input type="text" name="custom_offer_text" value="{{ config.get('custom_offer_text', '') }}"
+                placeholder="Ej: Invitación a evento VIP..."
+                class="w-full p-2.5 text-sm rounded-lg border border-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        {% else %}
+        <p class="text-slate-400 italic">Este agente no tiene opciones configurables por ahora.</p>
+        {% endif %}
+
+        <div class="pt-4">
+            <button type="submit"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all">
+                Guardar Cambios
+            </button>
+        </div>
+
+    </form>
+</div>
+{% endblock %}

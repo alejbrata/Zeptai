@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Agenda — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8 pb-28 max-w-4xl mx-auto w-full">
+
+    <div class="mb-6">
+        <a href="{{ url_for('web.dashboard') }}" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Inicio</a>
+        <h1 class="text-2xl font-bold text-slate-800 tracking-tight mt-2">Agenda</h1>
+        <p class="text-sm text-slate-400 mt-0.5">Citas gestionadas por tu asistente IA</p>
+    </div>
+
+    <!-- Calendario -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6">
+        <div id="calendar"></div>
+    </div>
+
+    <!-- Modal detalle cita -->
+    <div id="eventModal" class="fixed inset-0 z-[100] hidden items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm z-10">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 font-bold text-lg" id="modalInitial">C</div>
+                <div>
+                    <p class="font-bold text-slate-800 text-base" id="modalTitle">—</p>
+                    <p class="text-xs text-slate-400" id="modalPhone">—</p>
+                </div>
+            </div>
+            <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-2 text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span id="modalDate">—</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span id="modalTime">—</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FullCalendar CDN -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.11/locales/es.global.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: window.innerWidth < 640 ? 'listMonth' : 'timeGridWeek',
+            locale: 'es',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+            },
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Lista' },
+            events: '/agenda/events',
+            eventColor: '#6366f1',
+            eventBorderColor: '#4f46e5',
+            eventTextColor: '#ffffff',
+            height: 'auto',
+            slotMinTime: '07:00:00',
+            slotMaxTime: '21:00:00',
+            slotDuration: '00:30:00',
+            slotLabelInterval: '01:00',
+            slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+            allDaySlot: false,
+            nowIndicator: true,
+            scrollTime: new Date().getHours() + ':00:00',
+            eventContent: function(arg) {
+                const start = arg.event.start;
+                const end   = arg.event.end;
+                const fmt = t => t ? t.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
+                return {
+                    html: `<div class="fc-event-main-inner">
+                        <div class="font-semibold truncate">${arg.event.title}</div>
+                        <div class="text-[10px] opacity-80">${fmt(start)} – ${fmt(end)}</div>
+                    </div>`
+                };
+            },
+            eventClick: function (info) {
+                const event = info.event;
+                const start = event.start;
+                const end   = event.end;
+                const name  = event.title;
+                const phone = event.extendedProps.client_phone;
+
+                document.getElementById('modalInitial').textContent = name[0]?.toUpperCase() || 'C';
+                document.getElementById('modalTitle').textContent   = name;
+                document.getElementById('modalPhone').textContent   = phone || 'Sin teléfono';
+                document.getElementById('modalDate').textContent    = start.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+                const fmtT = t => t ? t.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '—';
+                document.getElementById('modalTime').textContent = `${fmtT(start)} – ${fmtT(end)}`;
+
+                const modal = document.getElementById('eventModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            },
+            noEventsContent: 'No hay citas. Pídele a tu asistente que agende una.',
+        });
+        calendar.render();
+
+        // Exponer globalmente para el auto-refresh desde el chat widget
+        window._agendaCalendar = calendar;
+    });
+
+    function closeModal() {
+        const modal = document.getElementById('eventModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+</script>
+
+<style>
+    .fc .fc-button-primary {
+        background-color: #6366f1 !important; border-color: #4f46e5 !important;
+        border-radius: 0.75rem !important; font-size: 0.75rem !important;
+        font-weight: 600 !important; padding: 0.4rem 0.8rem !important;
+    }
+    .fc .fc-button-primary:hover { background-color: #4f46e5 !important; }
+    .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: #4338ca !important; }
+    .fc .fc-toolbar-title { font-size: 1rem !important; font-weight: 700 !important; color: #1e293b !important; }
+    .fc .fc-col-header-cell-cushion { color: #64748b !important; font-size: 0.75rem !important; font-weight: 600 !important; text-transform: uppercase !important; }
+    .fc .fc-day-today { background-color: #eef2ff !important; }
+    .fc .fc-day-today .fc-col-header-cell-cushion { color: #6366f1 !important; font-weight: 700 !important; }
+    .fc .fc-event { border-radius: 6px !important; font-size: 0.72rem !important; padding: 2px 5px !important; border-left: 3px solid #4338ca !important; }
+    .fc .fc-timegrid-slot { height: 2rem !important; }
+    .fc .fc-timegrid-slot-label { font-size: 0.7rem !important; color: #94a3b8 !important; }
+    .fc .fc-now-indicator-line { border-color: #f43f5e !important; }
+    .fc .fc-list-event:hover td { background-color: #eef2ff !important; cursor: pointer; }
+    .fc-event-main-inner { line-height: 1.3; }
+</style>
+{% endblock %}

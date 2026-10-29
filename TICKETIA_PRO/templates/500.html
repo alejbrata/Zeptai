@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-full px-6 py-24 text-center">
+    <div class="text-8xl mb-6 select-none">500</div>
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">Algo salió mal</h1>
+    <p class="text-slate-400 mb-8 max-w-xs">Ocurrió un error interno. El equipo ha sido notificado. Por favor, intenta de nuevo en unos momentos.</p>
+    <div class="flex gap-3">
+        <button onclick="location.reload()"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95">
+            Reintentar
+        </button>
+        <a href="{{ url_for('web.dashboard') if session.get('user_phone') else url_for('web.index') }}"
+            class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-2xl transition-all active:scale-95">
+            Ir al inicio
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{
+    "role": "Experto en Reformas y Construcción",
+    "units": ["m2", "ml (metros lineales)", "ud", "partida", "hora", "saco"],
+    "verbs": ["demoler", "picar", "alicatar", "instalar", "pintar", "enlucir", "sanear"],
+    "common_items": [
+        "Demolición tabique ladrillo hueco",
+        "Alicatado baño azulejo cerámico",
+        "Pintura plástica lisa blanca",
+        "Instalación punto de luz",
+        "Suministro y colocación inodoro roca"
+    ],
+    "structure_tips": "Agrupa por estancias (Cocina, Baño) o capítulos (Demolición, Albañilería, Fontanería). Desglosa mano de obra y materiales si no se especifica."
+}

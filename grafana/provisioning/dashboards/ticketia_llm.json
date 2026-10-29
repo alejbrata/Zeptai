@@ -1,0 +1,230 @@
+{
+  "uid": "zeptai-llm",
+  "title": "Zeptai — LLM Observabilidad",
+  "description": "Métricas de llamadas LLM, tokens, coste, latencia y calidad RAG",
+  "tags": ["zeptai", "llm", "mlops"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Llamadas LLM totales",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{"color":"blue","value":null}] } }
+      },
+      "targets": [{ "expr": "sum(zeptai_llm_requests_total)", "legendFormat": "Total", "refId": "A" }]
+    },
+
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Tokens consumidos",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{"color":"purple","value":null}] } }
+      },
+      "targets": [{ "expr": "sum(zeptai_llm_tokens_total)", "legendFormat": "Tokens", "refId": "A" }]
+    },
+
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Coste acumulado (USD)",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":5}] }
+        }
+      },
+      "targets": [{ "expr": "sum(zeptai_llm_cost_usd_total)", "legendFormat": "Coste", "refId": "A" }]
+    },
+
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Tasa de éxito",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{"color":"red","value":null},{"color":"yellow","value":90},{"color":"green","value":98}] }
+        }
+      },
+      "targets": [{
+        "expr": "sum(zeptai_llm_requests_total{success='true'}) / sum(zeptai_llm_requests_total) * 100",
+        "legendFormat": "Éxito %",
+        "refId": "A"
+      }]
+    },
+
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Llamadas por modelo · últimas 24h",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": { "custom": { "fillOpacity": 10, "lineWidth": 2 } }
+      },
+      "targets": [{
+        "expr": "sum by (model) (rate(zeptai_llm_requests_total[5m])) * 60",
+        "legendFormat": "{{ model }}",
+        "refId": "A"
+      }]
+    },
+
+    {
+      "id": 6,
+      "type": "piechart",
+      "title": "Coste por modelo (USD)",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "pieType": "donut", "tooltip": { "mode": "single" }, "legend": { "displayMode": "list", "placement": "right" } },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 } },
+      "targets": [{
+        "expr": "sum by (model) (zeptai_llm_cost_usd_total)",
+        "legendFormat": "{{ model }}",
+        "refId": "A"
+      }]
+    },
+
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Latencia p50 / p95 por stage (segundos)",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "fillOpacity": 5, "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (stage, le) (rate(zeptai_llm_latency_seconds_bucket[5m])))",
+          "legendFormat": "p50 — {{ stage }}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (stage, le) (rate(zeptai_llm_latency_seconds_bucket[5m])))",
+          "legendFormat": "p95 — {{ stage }}",
+          "refId": "B"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Tokens por tipo (prompt vs completion)",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 20, "lineWidth": 2, "stacking": { "mode": "normal" } } } },
+      "targets": [{
+        "expr": "sum by (token_type) (rate(zeptai_llm_tokens_total[5m])) * 60",
+        "legendFormat": "{{ token_type }}",
+        "refId": "A"
+      }]
+    },
+
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Tasa de errores LLM",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "percent", "custom": { "fillOpacity": 10 } } },
+      "targets": [{
+        "expr": "sum(rate(zeptai_llm_requests_total{success='false'}[5m])) / sum(rate(zeptai_llm_requests_total[5m])) * 100",
+        "legendFormat": "Error %",
+        "refId": "A"
+      }]
+    },
+
+    {
+      "id": 10,
+      "type": "gauge",
+      "title": "RAG — Faithfulness",
+      "gridPos": { "x": 0, "y": 27, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizWidth": 75, "minVizHeight": 75 },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "steps": [{"color":"red","value":null},{"color":"yellow","value":0.6},{"color":"green","value":0.8}] }
+        }
+      },
+      "targets": [{ "expr": "zeptai_rag_score{metric='faithfulness'}", "refId": "A" }]
+    },
+
+    {
+      "id": 11,
+      "type": "gauge",
+      "title": "RAG — Answer Relevancy",
+      "gridPos": { "x": 6, "y": 27, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizWidth": 75, "minVizHeight": 75 },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "steps": [{"color":"red","value":null},{"color":"yellow","value":0.6},{"color":"green","value":0.8}] }
+        }
+      },
+      "targets": [{ "expr": "zeptai_rag_score{metric='answer_relevancy'}", "refId": "A" }]
+    },
+
+    {
+      "id": 12,
+      "type": "gauge",
+      "title": "RAG — Contextual Precision",
+      "gridPos": { "x": 12, "y": 27, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizWidth": 75, "minVizHeight": 75 },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "steps": [{"color":"red","value":null},{"color":"yellow","value":0.6},{"color":"green","value":0.8}] }
+        }
+      },
+      "targets": [{ "expr": "zeptai_rag_score{metric='contextual_precision'}", "refId": "A" }]
+    },
+
+    {
+      "id": 13,
+      "type": "gauge",
+      "title": "RAG — Contextual Recall",
+      "gridPos": { "x": 18, "y": 27, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_ds" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizWidth": 75, "minVizHeight": 75 },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "steps": [{"color":"red","value":null},{"color":"yellow","value":0.6},{"color":"green","value":0.8}] }
+        }
+      },
+      "targets": [{ "expr": "zeptai_rag_score{metric='contextual_recall'}", "refId": "A" }]
+    }
+
+  ]
+}

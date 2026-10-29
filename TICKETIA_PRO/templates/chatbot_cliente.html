@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Chatbot Cliente — {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-start px-4 py-8 pb-28 min-h-full bg-slate-50">
+
+    <!-- Header de página -->
+    <div class="w-full max-w-xl mb-6">
+        <a href="{{ url_for('web.dashboard') }}" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Inicio</a>
+        <div class="flex items-center justify-between mt-2">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Chatbot Cliente</h1>
+                <p class="text-sm text-slate-400 mt-0.5">Vista simulada de cómo interactúa un cliente con tu asistente</p>
+            </div>
+            <span class="text-xs font-semibold bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-200">
+                Demo cliente
+            </span>
+        </div>
+    </div>
+
+    <!-- Contenedor del chat -->
+    <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 flex flex-col" style="height: 70vh; min-height: 400px;">
+
+        <!-- Cabecera del bot -->
+        <div class="bg-indigo-600 px-5 py-4 flex items-center gap-3 flex-shrink-0">
+            <div class="relative">
+                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
+                    {{ business_name[0] | upper if business_name else 'A' }}
+                </div>
+                <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-indigo-600 rounded-full"></span>
+            </div>
+            <div>
+                <p class="text-white font-semibold text-sm leading-tight">{{ business_name or 'Asistente IA' }}</p>
+                <p class="text-indigo-200 text-xs">Asistente IA · Responde al instante</p>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        <div id="clientMessages" class="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50">
+            <!-- Mensaje de bienvenida -->
+            <div class="flex justify-start animate-fade-in-up">
+                <div class="bg-white border border-slate-200 text-slate-700 px-4 py-3 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl shadow-sm text-sm max-w-[85%] leading-relaxed">
+                    ¡Hola! Soy el asistente virtual con IA de <strong>{{ business_name or 'este negocio' }}</strong>. Estás chateando con un sistema automatizado, no con una persona. ¿En qué puedo ayudarte hoy?
+                </div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="px-4 py-3 border-t border-slate-100 bg-white flex gap-3 items-center flex-shrink-0">
+            <input
+                type="text"
+                id="clientInput"
+                placeholder="Escribe tu mensaje..."
+                class="flex-1 bg-slate-100 border-0 rounded-full px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
+                onkeypress="handleClientKey(event)"
+                autocomplete="off"
+            >
+            <button
+                onclick="sendClientMessage()"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 shadow-md shadow-indigo-200"
+                aria-label="Enviar"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-7 7m7-7l7 7"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Nota informativa -->
+    <p class="text-xs text-slate-400 mt-4 text-center max-w-sm">
+        Esta vista simula la experiencia de un cliente real. La IA responde con la misma lógica que en WhatsApp.
+    </p>
+</div>
+
+<script>
+    let _clientLastMsg = '';
+
+    function handleClientKey(e) {
+        if (e.key === 'Enter') sendClientMessage();
+    }
+
+    async function sendClientMessage() {
+        const input = document.getElementById('clientInput');
+        const msg = input.value.trim();
+        if (!msg) return;
+        _clientLastMsg = msg;
+        addClientMessage(msg, 'user');
+        input.value = '';
+        await sendClientText(msg);
+    }
+
+    async function sendClientText(msg) {
+        const typingId = addClientMessage('...', 'bot', true);
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            });
+            const data = await response.json();
+
+            const typingElem = document.getElementById(typingId);
+            if (typingElem) typingElem.remove();
+
+            if (data.response) {
+                addClientMessage(data.response, 'bot');
+            } else if (response.status === 401) {
+                addClientMessage('Sesión expirada. Vuelve a iniciar sesión.', 'bot');
+            } else {
+                addClientMessage('Ha ocurrido un error. Inténtalo de nuevo.', 'bot');
+            }
+        } catch (e) {
+            const typingElem = document.getElementById(typingId);
+            if (typingElem) typingElem.remove();
+
+            const errDiv = document.createElement('div');
+            errDiv.className = 'flex justify-start animate-fade-in-up';
+            errDiv.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-sm max-w-[85%]">
+                Error de conexión. <button onclick="retryClientMessage()" class="underline font-bold ml-1">Reintentar</button>
+            </div>`;
+            document.getElementById('clientMessages').appendChild(errDiv);
+            scrollClientToBottom();
+        }
+    }
+
+    function retryClientMessage() {
+        if (!_clientLastMsg) return;
+        const msgs = document.getElementById('clientMessages');
+        const last = msgs.lastElementChild;
+        if (last && last.querySelector('button[onclick="retryClientMessage()"]')) last.remove();
+        addClientMessage(_clientLastMsg, 'user');
+        sendClientText(_clientLastMsg);
+    }
+
+    function addClientMessage(text, role, isTyping = false) {
+        const container = document.getElementById('clientMessages');
+        const div = document.createElement('div');
+        const id = 'cmsg-' + Date.now();
+        div.id = id;
+        div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`;
+
+        const bubble = document.createElement('div');
+        bubble.className = role === 'user'
+            ? 'bg-indigo-600 text-white px-4 py-2.5 rounded-tl-2xl rounded-tr-xl rounded-bl-2xl shadow-sm text-sm max-w-[85%] leading-relaxed'
+            : 'bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl shadow-sm text-sm max-w-[85%] leading-relaxed';
+
+        if (isTyping) {
+            bubble.innerHTML = '<span class="flex gap-1 items-center py-0.5"><span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0ms"></span><span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:150ms"></span><span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:300ms"></span></span>';
+            div.appendChild(bubble);
+        } else {
+            // Escapar SIEMPRE antes de formatear: el texto puede venir del LLM
+            // (respuesta del asistente, potencialmente influida por contenido RAG no confiable).
+            let formatted = escapeHtml(text).replace(/\n/g, '<br>');
+            formatted = formatted.replace(/(https?:\/\/[^\s&]+)/g, '<a href="$1" target="_blank" class="underline font-bold text-inherit">$1</a>');
+            bubble.innerHTML = formatted;
+
+            if (role === 'bot') {
+                // Feedback dentro de la burbuja, separado por línea sutil al fondo
+                bubble.innerHTML += `
+                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+                        <span class="text-[10px] text-slate-300">¿Útil?</span>
+                        <div class="flex gap-2" id="fb-${id}">
+                            <button onclick="sendFeedback(1, this, '${id}')"
+                                class="text-base leading-none text-slate-300 hover:text-emerald-500 transition-colors active:scale-125">&#128077;</button>
+                            <button onclick="sendFeedback(-1, this, '${id}')"
+                                class="text-base leading-none text-slate-300 hover:text-red-400 transition-colors active:scale-125">&#128078;</button>
+                        </div>
+                    </div>`;
+                div.appendChild(bubble);
+            } else {
+                div.appendChild(bubble);
+            }
+        }
+
+        container.appendChild(div);
+        scrollClientToBottom();
+        return id;
+    }
+
+    function scrollClientToBottom() {
+        const c = document.getElementById('clientMessages');
+        c.scrollTop = c.scrollHeight;
+    }
+
+    async function sendFeedback(rating, btn, msgId) {
+        const msgDiv = document.getElementById(msgId);
+        const preview = msgDiv ? msgDiv.innerText?.slice(0, 200) : '';
+        try {
+            await fetch('/api/chat/feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({rating, message_preview: preview}),
+            });
+        } catch(e) {}
+        const fbArea = document.getElementById('fb-' + msgId);
+        if (fbArea) {
+            fbArea.innerHTML = rating === 1
+                ? '<span class="text-[11px] text-emerald-500 font-medium">Gracias &#128077;</span>'
+                : '<span class="text-[11px] text-slate-400 font-medium">Gracias &#128078;</span>';
+        }
+    }
+
+    // Focus al cargar
+    document.getElementById('clientInput').focus();
+</script>
+{% endblock %}

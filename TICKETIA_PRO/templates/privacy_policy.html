@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Política de Privacidad — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-10 max-w-2xl mx-auto w-full pb-24">
+
+    <header class="mb-8">
+        <a href="javascript:history.back()" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Volver</a>
+        <h1 class="text-3xl font-bold text-slate-800 mt-2">Política de Privacidad</h1>
+        <p class="text-slate-400 text-sm mt-1">Última actualización: abril 2025</p>
+    </header>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mb-8 text-sm text-amber-800">
+        <strong>Aviso:</strong> Esta plataforma utiliza sistemas de <strong>Inteligencia Artificial</strong> (modelos de lenguaje GPT-4o de OpenAI)
+        para procesar información y generar respuestas automatizadas. Conforme al Reglamento UE de IA 2024/1689 (EU AI Act), Art. 50,
+        te informamos de que en las interacciones de chat estás comunicándote con un sistema automatizado, no con una persona.
+    </div>
+
+    <div class="space-y-8 text-slate-700 text-sm leading-relaxed">
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">1. Responsable del tratamiento</h2>
+            <p>
+                <strong>Zeptai</strong> (proyecto de investigación TFM, Universidad [Tu Universidad])<br>
+                Contacto: <a href="mailto:privacidad@zeptai.com" class="text-indigo-600 underline">privacidad@zeptai.com</a>
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">2. Datos que recogemos</h2>
+            <ul class="list-disc ml-5 space-y-1">
+                <li>Nombre del negocio, email y número de teléfono (WhatsApp) al registrarte.</li>
+                <li>Tickets, facturas y documentos que subas a la plataforma.</li>
+                <li>Mensajes de chat con el asistente IA.</li>
+                <li>Datos de configuración del negocio (horarios, productos, políticas).</li>
+                <li>Registros de actividad y uso de la plataforma (logs).</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">3. Finalidad y base jurídica</h2>
+            <ul class="list-disc ml-5 space-y-1">
+                <li><strong>Ejecución del contrato</strong> (Art. 6.1.b RGPD): prestar el servicio de gestión de tickets y asistente IA.</li>
+                <li><strong>Consentimiento</strong> (Art. 6.1.a RGPD): funciones opcionales como Networking B2B y análisis financiero proactivo.</li>
+                <li><strong>Interés legítimo</strong> (Art. 6.1.f RGPD): seguridad y mejora del servicio.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">4. Transferencias internacionales</h2>
+            <p>
+                Tus datos (en particular el contenido de los chats y documentos) son procesados por
+                <strong>OpenAI, LLC</strong> (Estados Unidos) para generar respuestas de IA. Esta transferencia está amparada
+                en las Cláusulas Contractuales Estándar (SCC) de la Comisión Europea conforme al Art. 46.2.c RGPD.
+                Más información en la <a href="https://openai.com/policies/privacy-policy" class="text-indigo-600 underline" target="_blank" rel="noopener">política de privacidad de OpenAI</a>.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">5. Decisiones automatizadas</h2>
+            <p>
+                La plataforma utiliza IA para análisis financiero, detección de sinergias B2B y búsqueda de subvenciones.
+                Estas funciones generan <strong>sugerencias y alertas automatizadas</strong>. Ninguna decisión vinculante
+                se toma de forma exclusivamente automatizada sin intervención humana (Art. 22 RGPD).
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">6. Conservación de datos</h2>
+            <p>Conservamos tus datos mientras mantengas tu cuenta activa. Tras la baja, los datos se eliminan en un plazo máximo de 30 días salvo obligación legal de conservación.</p>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">7. Tus derechos</h2>
+            <p class="mb-2">Conforme al RGPD y la LOPDGDD (LO 3/2018), puedes ejercer los siguientes derechos:</p>
+            <ul class="list-disc ml-5 space-y-1">
+                <li><strong>Acceso</strong>: saber qué datos tenemos sobre ti.</li>
+                <li><strong>Rectificación</strong>: corregir datos inexactos.</li>
+                <li><strong>Supresión</strong> ("derecho al olvido"): eliminar tus datos.</li>
+                <li><strong>Portabilidad</strong>: recibir tus datos en formato estructurado.</li>
+                <li><strong>Oposición y limitación</strong>: restringir ciertos tratamientos.</li>
+            </ul>
+            <p class="mt-3">
+                Envía tu solicitud a <a href="mailto:privacidad@zeptai.com" class="text-indigo-600 underline">privacidad@zeptai.com</a>.
+                También puedes reclamar ante la <a href="https://www.aepd.es" class="text-indigo-600 underline" target="_blank" rel="noopener">Agencia Española de Protección de Datos (AEPD)</a>.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-bold text-slate-800 mb-3">8. Seguridad</h2>
+            <p>Aplicamos medidas técnicas y organizativas apropiadas: cifrado HTTPS, hashing de contraseñas con bcrypt, acceso restringido por autenticación y almacenamiento en servidor propio.</p>
+        </section>
+
+    </div>
+</div>
+{% endblock %}

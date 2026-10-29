@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Crear Cuenta — Zeptai{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-full px-6 py-12 bg-slate-50">
+    <div class="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 border border-slate-100">
+
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-slate-800">Crear Cuenta</h1>
+            <p class="text-slate-400 mt-2 text-sm">Empieza a digitalizar tus tickets</p>
+        </div>
+
+        <form action="{{ url_for('web.register') }}" method="POST" class="space-y-5" novalidate>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Nombre Negocio</label>
+                <div class="relative">
+                    <input type="text" name="business_name" id="regName" placeholder="Ej: Cafeteria Central" required autocomplete="organization"
+                        class="w-full px-4 pr-10 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 font-medium"
+                        oninput="rv(this, /^.{2,}$/, 'Minimo 2 caracteres')">
+                    <span id="regName-ok" class="absolute right-4 top-3.5 text-emerald-500 hidden">✓</span>
+                </div>
+                <p id="regName-err" class="text-xs text-red-500 mt-1 ml-1 hidden"></p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Email</label>
+                <div class="relative">
+                    <input type="email" name="email" id="regEmail" placeholder="tu@email.com" required autocomplete="email"
+                        class="w-full px-4 pr-10 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 font-medium"
+                        oninput="rv(this, /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Email no valido')">
+                    <span id="regEmail-ok" class="absolute right-4 top-3.5 text-emerald-500 hidden">✓</span>
+                </div>
+                <p id="regEmail-err" class="text-xs text-red-500 mt-1 ml-1 hidden"></p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Telefono (WhatsApp)</label>
+                <div class="relative">
+                    <input type="text" name="phone" id="regPhone" placeholder="+34 600 000 000" required autocomplete="tel"
+                        class="w-full px-4 pr-10 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 font-medium"
+                        oninput="rv(this, /^\+?[\d\s\-]{8,15}$/, 'Telefono no valido')">
+                    <span id="regPhone-ok" class="absolute right-4 top-3.5 text-emerald-500 hidden">✓</span>
+                </div>
+                <p id="regPhone-err" class="text-xs text-red-500 mt-1 ml-1 hidden"></p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Contrasena</label>
+                <div class="relative">
+                    <input type="password" name="password" id="regPwd" placeholder="••••••••" required autocomplete="new-password"
+                        class="w-full px-4 pr-10 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 font-medium"
+                        oninput="rv(this, /^.{8,}$/, 'Minimo 8 caracteres')">
+                    <span id="regPwd-ok" class="absolute right-4 top-3.5 text-emerald-500 hidden">✓</span>
+                </div>
+                <p id="regPwd-err" class="text-xs text-red-500 mt-1 ml-1 hidden"></p>
+                <!-- Strength bar -->
+                <div class="mt-2 flex gap-1" id="pwdStrengthBar">
+                    <div class="h-1 flex-1 rounded-full bg-slate-200" id="ps1"></div>
+                    <div class="h-1 flex-1 rounded-full bg-slate-200" id="ps2"></div>
+                    <div class="h-1 flex-1 rounded-full bg-slate-200" id="ps3"></div>
+                    <div class="h-1 flex-1 rounded-full bg-slate-200" id="ps4"></div>
+                </div>
+            </div>
+
+            <!-- Consentimiento RGPD -->
+            <div class="flex items-start gap-3">
+                <input type="checkbox" name="gdpr_consent" id="gdprConsent" required
+                    class="mt-0.5 w-4 h-4 accent-indigo-600 flex-shrink-0 cursor-pointer">
+                <label for="gdprConsent" class="text-xs text-slate-500 leading-relaxed cursor-pointer">
+                    He leído y acepto la
+                    <a href="{{ url_for('web.privacy_policy') }}" class="text-indigo-600 underline" target="_blank">Política de Privacidad</a>.
+                    Tus datos se tratan conforme al RGPD (UE) 2016/679 para prestar el servicio.
+                    Puedes ejercer tus derechos en <span class="font-medium">privacidad@zeptai.com</span>.
+                </label>
+            </div>
+
+            <button type="submit"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95 text-sm uppercase tracking-wide mt-4">
+                Crear Cuenta
+            </button>
+
+        </form>
+
+        <script>
+            function rv(input, regex, errMsg) {
+                const errEl = document.getElementById(input.id + '-err');
+                const okEl  = document.getElementById(input.id + '-ok');
+                const valid = regex.test(input.value.trim());
+                if (input.value.trim() === '') {
+                    input.classList.remove('border-red-300', 'border-emerald-300');
+                    if (errEl) errEl.classList.add('hidden');
+                    if (okEl)  okEl.classList.add('hidden');
+                } else if (valid) {
+                    input.classList.add('border-emerald-300'); input.classList.remove('border-red-300');
+                    if (errEl) errEl.classList.add('hidden');
+                    if (okEl)  okEl.classList.remove('hidden');
+                } else {
+                    input.classList.add('border-red-300'); input.classList.remove('border-emerald-300');
+                    if (errEl) { errEl.textContent = errMsg; errEl.classList.remove('hidden'); }
+                    if (okEl)  okEl.classList.add('hidden');
+                }
+                // Password strength bar
+                if (input.id === 'regPwd') updatePwdStrength(input.value);
+            }
+
+            function updatePwdStrength(pwd) {
+                let score = 0;
+                if (pwd.length >= 8)  score++;
+                if (/[A-Z]/.test(pwd)) score++;
+                if (/[0-9]/.test(pwd)) score++;
+                if (/[^A-Za-z0-9]/.test(pwd)) score++;
+                const colors = ['bg-red-400','bg-orange-400','bg-yellow-400','bg-emerald-500'];
+                [1,2,3,4].forEach(i => {
+                    const el = document.getElementById('ps' + i);
+                    el.className = 'h-1 flex-1 rounded-full ' + (i <= score ? colors[score-1] : 'bg-slate-200');
+                });
+            }
+        </script>
+
+        <div class="mt-8 text-center">
+            <p class="text-xs text-slate-400 font-medium">
+                ¿Ya tienes cuenta?
+                <a href="{{ url_for('web.login') }}"
+                    class="text-indigo-600 hover:text-indigo-700 font-bold ml-1 transition-colors">Inicia sesión</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

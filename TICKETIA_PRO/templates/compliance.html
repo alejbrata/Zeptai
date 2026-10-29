@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Cumplimiento Normativo — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-10 max-w-2xl mx-auto w-full pb-24">
+
+    <header class="mb-8">
+        <a href="javascript:history.back()" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Volver</a>
+        <h1 class="text-3xl font-bold text-slate-800 mt-2">Cumplimiento Normativo</h1>
+        <p class="text-slate-500 text-sm mt-1">Estado de adecuación a la normativa europea y española aplicable a sistemas de IA.</p>
+    </header>
+
+    <!-- Leyenda -->
+    <div class="flex items-center gap-6 mb-8 text-xs font-semibold">
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Cumple</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Cumplimiento parcial / MVP</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span> No aplica / Fuera de alcance</span>
+    </div>
+
+    <!-- BLOQUE 1: EU AI Act -->
+    <section class="mb-8">
+        <h2 class="text-base font-bold text-slate-700 uppercase tracking-wider mb-3">Reglamento UE 2024/1689 — EU AI Act</h2>
+        <div class="space-y-3">
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 50 — Transparencia en sistemas conversacionales</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">El chatbot declara explícitamente ser un sistema de IA automatizado en el primer mensaje y en la cabecera de la interfaz. No suplanta identidad humana.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 6 + Anexo III — Clasificación de riesgo</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">El sistema se clasifica como <strong>riesgo mínimo</strong>: no toma decisiones sobre empleo, crédito, acceso a servicios esenciales ni es usado por entidades públicas. Las recomendaciones de los agentes son orientativas y el usuario decide.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 13 — Explicabilidad de decisiones automatizadas</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Los agentes proactivos (coach financiero, hunter de subvenciones, networker) incluyen siempre una razón textual generada por GPT-4o. El usuario puede ver el motivo de cada sugerencia.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 9 — Sistema de gestión de riesgos</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">No obligatorio para sistemas de riesgo mínimo. En una versión productiva se documentaría un análisis formal de riesgos. Fuera del alcance del MVP.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">MVP</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- BLOQUE 2: RGPD -->
+    <section class="mb-8">
+        <h2 class="text-base font-bold text-slate-700 uppercase tracking-wider mb-3">Reglamento UE 2016/679 — RGPD</h2>
+        <div class="space-y-3">
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 7 — Consentimiento informado</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">El formulario de registro incluye checkbox obligatorio de aceptación de la Política de Privacidad, validado también en el servidor. Sin consentimiento no se crea la cuenta.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 13 — Información en el punto de recogida</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">La Política de Privacidad detalla: responsable del tratamiento, finalidad, base jurídica, destinatarios (OpenAI), plazo de conservación y derechos del usuario.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 17 / 20 — Derecho de supresión y portabilidad</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">El derecho de supresión se ejerce por email (privacidad@zeptai.com) y existe un script interno de borrado completo de cuenta. No hay endpoint de exportación automatizado en el MVP.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">Parcial</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 22 — Decisiones exclusivamente automatizadas</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Ninguna decisión vinculante se toma sin intervención humana. Los agentes generan sugerencias; el usuario acepta, ignora o actúa libremente sobre ellas.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Cap. V — Transferencias internacionales (OpenAI / EEUU)</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">OpenAI está acogido a las Cláusulas Contractuales Estándar (SCC) de la Comisión Europea como base legal de transferencia a terceros países (Art. 46.2.c RGPD). Documentado en la Política de Privacidad.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 30 — Registro de actividades de tratamiento (RAT)</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Obligatorio para organizaciones con más de 250 empleados o tratamiento de datos de riesgo elevado. No aplica al MVP. Requerido antes de escalar a producción.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">No aplica</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- BLOQUE 3: LOPDGDD -->
+    <section class="mb-8">
+        <h2 class="text-base font-bold text-slate-700 uppercase tracking-wider mb-3">LO 3/2018 — LOPDGDD (España)</h2>
+        <div class="space-y-3">
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 37 — Delegado de Protección de Datos (DPO)</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">No obligatorio: el sistema no trata datos a gran escala, no es autoridad pública ni realiza monitorización sistemática. Si la plataforma superase los umbrales de volumen, sería necesario designar un DPO.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">No aplica</span>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-800 text-sm">Art. 22 LSSI — Cookies y comunicaciones electrónicas</p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Se usan únicamente cookies de sesión (técnicas, exentas de consentimiento) y localStorage para preferencias UI. Se informa mediante banner al primer acceso con enlace a la política.</p>
+                    </div>
+                    <span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Cumple</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Nota final -->
+    <div class="bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-xs text-slate-500 leading-relaxed">
+        <strong class="text-slate-700">Nota sobre el alcance:</strong> Este análisis corresponde a la fase MVP del proyecto Zeptai (TFM, 2025).
+        Los puntos marcados como "Parcial" o "MVP" serían abordados antes de un lanzamiento comercial real.
+        El sistema no ha sido sometido a auditoría externa formal.
+    </div>
+
+</div>
+{% endblock %}

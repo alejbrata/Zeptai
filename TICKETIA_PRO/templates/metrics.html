@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block title %}Métricas LLM — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 pb-28 max-w-2xl mx-auto w-full">
+
+    <!-- Header -->
+    <header class="mb-8">
+        <a href="{{ url_for('web.dashboard') }}" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Inicio</a>
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight mt-2">
+            Métricas LLM
+            {% if is_admin %}<span class="text-sm font-normal text-indigo-500 ml-2">· Vista global</span>{% endif %}
+        </h1>
+        <p class="text-slate-500 mt-1 font-medium">Uso real de los modelos de IA</p>
+    </header>
+
+    <!-- Hero KPIs -->
+    <div id="kpi-grid" class="grid grid-cols-2 gap-3 mb-8">
+        <div class="bg-indigo-600 rounded-2xl p-5 text-white col-span-2">
+            <p class="text-indigo-200 text-xs font-semibold uppercase tracking-wider mb-1">Coste total estimado</p>
+            <p class="text-4xl font-bold" id="kpi-cost">—</p>
+            <p class="text-indigo-300 text-xs mt-1" id="kpi-calls-sub">— llamadas registradas</p>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Tokens totales</p>
+            <p class="text-2xl font-bold text-slate-800" id="kpi-tokens">—</p>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Latencia media</p>
+            <p class="text-2xl font-bold text-slate-800" id="kpi-latency">—</p>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Tasa de éxito</p>
+            <p class="text-2xl font-bold text-emerald-600" id="kpi-success">—</p>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Llamadas totales</p>
+            <p class="text-2xl font-bold text-slate-800" id="kpi-total-calls">—</p>
+        </div>
+    </div>
+
+    <!-- Daily calls chart -->
+    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm mb-6">
+        <h2 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">Llamadas · últimos 14 días</h2>
+        <div class="relative h-44">
+            <canvas id="chart-daily"></canvas>
+        </div>
+    </div>
+
+    <!-- By model + by stage (side by side on md+) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <h2 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">Distribución por modelo</h2>
+            <div class="relative h-44">
+                <canvas id="chart-model"></canvas>
+            </div>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+            <h2 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">Coste por modelo (USD)</h2>
+            <div class="relative h-44">
+                <canvas id="chart-cost"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stages table -->
+    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm mb-6">
+        <h2 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">Uso por funcionalidad</h2>
+        <div id="stage-table" class="space-y-3 text-sm">
+            <p id="stage-loading" class="text-slate-400 text-center py-4 animate-pulse">Cargando…</p>
+        </div>
+    </div>
+
+    <!-- RAG Quality Section -->
+    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm mb-6">
+        <h2 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">Calidad RAG · Base de Conocimiento</h2>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-slate-50 rounded-xl p-4">
+                <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Relevancia media</p>
+                <p class="text-2xl font-bold text-indigo-600" id="rag-relevance">—</p>
+                <p class="text-xs text-slate-400 mt-0.5">0% sin contexto · 100% perfecto</p>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-4">
+                <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Consultas RAG</p>
+                <p class="text-2xl font-bold text-slate-800" id="rag-queries">—</p>
+                <p class="text-xs text-slate-400 mt-0.5" id="rag-chunks">— chunks por consulta</p>
+            </div>
+        </div>
+        <div class="border-t border-slate-100 pt-4">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Feedback del chatbot</p>
+            <div class="flex items-center gap-4">
+                <div class="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden" id="feedback-bar-container">
+                    <div id="feedback-bar-ok" class="h-full rounded-full bg-emerald-500 transition-all duration-700" style="width:0%"></div>
+                </div>
+                <div class="flex gap-3 text-sm flex-shrink-0">
+                    <span class="text-emerald-600 font-bold" id="fb-ok">👍 —</span>
+                    <span class="text-red-400 font-bold" id="fb-ko">👎 —</span>
+                </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-2" id="fb-rate">Sin datos de feedback aun</p>
+        </div>
+    </div>
+
+    <!-- Empty state (hidden by default) -->
+    <div id="empty-state" class="hidden text-center py-16 text-slate-400">
+        <p class="text-5xl mb-4">🤖</p>
+        <p class="font-semibold text-slate-600">Todavia no hay llamadas registradas</p>
+        <p class="text-sm mt-1">Interactua con el asistente o genera un video para empezar a ver metricas.</p>
+    </div>
+
+    {% if is_admin %}
+    <!-- ── Observabilidad Avanzada (solo admin) ────────────────────────────── -->
+    <div class="rounded-2xl overflow-hidden mb-6" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);">
+
+        <!-- Header -->
+        <div class="px-5 pt-5 pb-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🔭</span>
+                    <h2 class="font-bold text-sm uppercase tracking-wider text-indigo-300">Observabilidad Avanzada</h2>
+                </div>
+                <span class="text-xs text-slate-500 bg-white/5 px-2 py-1 rounded-full">OpenTelemetry + Prometheus</span>
+            </div>
+            <p class="text-slate-400 text-xs mt-1.5">Trazas distribuidas en Jaeger · Métricas LLM en Grafana</p>
+        </div>
+
+        <!-- Quick access cards -->
+        <div class="grid grid-cols-2 gap-3 px-5 pb-4">
+            <a href="http://localhost:3000/d/zeptai-llm" target="_blank" rel="noopener"
+               class="flex items-center gap-3 rounded-xl p-4 transition-all"
+               style="background: rgba(255,255,255,0.07);"
+               onmouseover="this.style.background='rgba(255,255,255,0.13)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
+                     style="background: #f46800;">G</div>
+                <div>
+                    <p class="font-bold text-white text-sm">Grafana</p>
+                    <p class="text-xs text-slate-400">Dashboards · :3000</p>
+                </div>
+                <span class="ml-auto text-slate-500 text-xs">↗</span>
+            </a>
+            <a href="http://localhost:16686" target="_blank" rel="noopener"
+               class="flex items-center gap-3 rounded-xl p-4 transition-all"
+               style="background: rgba(255,255,255,0.07);"
+               onmouseover="this.style.background='rgba(255,255,255,0.13)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
+                     style="background: #60a5fa;">J</div>
+                <div>
+                    <p class="font-bold text-white text-sm">Jaeger</p>
+                    <p class="text-xs text-slate-400">Trazas · :16686</p>
+                </div>
+                <span class="ml-auto text-slate-500 text-xs">↗</span>
+            </a>
+        </div>
+
+        <!-- Grafana iframe embed -->
+        <div class="mx-5 mb-4 rounded-xl overflow-hidden" style="border: 1px solid rgba(255,255,255,0.1);">
+            <div class="flex items-center justify-between px-4 py-2.5" style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <span class="text-xs font-semibold text-indigo-300">Dashboard LLM — Grafana</span>
+                <a href="http://localhost:3000/d/zeptai-llm" target="_blank"
+                   class="text-xs text-slate-400 hover:text-white transition-colors">Abrir en pantalla completa ↗</a>
+            </div>
+            <div class="relative" style="height: 500px; background: #111827;">
+                <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-500 text-sm pointer-events-none">
+                    <span class="text-2xl">📊</span>
+                    <span>Cargando Grafana…</span>
+                    <span class="text-xs">Asegúrate de que docker-compose está corriendo</span>
+                </div>
+                <iframe
+                    src="http://localhost:3000/d/zeptai-llm/zeptai-llm-observabilidad?orgId=1&theme=dark&kiosk"
+                    class="relative w-full h-full"
+                    style="border: none; z-index: 1;"
+                    loading="lazy"
+                    title="Grafana LLM Dashboard">
+                </iframe>
+            </div>
+        </div>
+
+        <!-- Live Prometheus summary -->
+        <div class="mx-5 mb-5">
+            <p class="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">Estado Prometheus</p>
+            <div class="grid grid-cols-2 gap-2" id="prom-live">
+                <div class="rounded-lg p-3" style="background: rgba(255,255,255,0.05);">
+                    <p class="text-slate-400 text-xs mb-0.5">Req/min (último 5m)</p>
+                    <p class="font-bold text-white text-lg" id="prom-rpm">—</p>
+                </div>
+                <div class="rounded-lg p-3" style="background: rgba(255,255,255,0.05);">
+                    <p class="text-slate-400 text-xs mb-0.5">Endpoint métricas</p>
+                    <a href="/api/prometheus" target="_blank"
+                       class="font-mono text-indigo-400 text-xs hover:text-indigo-200 transition-colors">/api/prometheus</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<script>
+const COLORS = ['#6366f1','#06b6d4','#f59e0b','#10b981','#f43f5e','#8b5cf6','#84cc16'];
+
+function fmt(n) { return Number(n).toLocaleString('es-ES'); }
+function fmtUsd(n) { return '$' + Number(n).toFixed(4); }
+function fmtMs(n) { return Math.round(n) + ' ms'; }
+
+function showMetricsError(msg) {
+    const loading = document.getElementById('stage-loading');
+    if (loading) {
+        loading.innerHTML = `<div class="text-center py-6">
+            <p class="text-red-500 font-medium mb-3">${msg}</p>
+            <button onclick="loadMetrics()" class="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors">
+                Reintentar
+            </button>
+        </div>`;
+        loading.classList.remove('animate-pulse');
+    }
+    // Also update KPI placeholders to show error state
+    ['kpi-cost','kpi-tokens','kpi-latency','kpi-success','kpi-total-calls','kpi-calls-sub'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.textContent === '—') el.textContent = 'Error';
+    });
+}
+
+async function loadMetrics() {
+    // Reset loading state
+    const loading = document.getElementById('stage-loading');
+    if (loading) { loading.innerHTML = 'Cargando…'; loading.classList.add('animate-pulse'); }
+
+    try {
+        const res = await fetch('/api/metrics/llm');
+        if (!res.ok) { showMetricsError('Error ' + res.status + ': no se pudo cargar'); return; }
+        const d = await res.json();
+
+        if (d.total_calls === 0) {
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('kpi-grid').classList.add('hidden');
+            return;
+        }
+
+        // ── Hero KPIs ──────────────────────────────────────────────────────
+        document.getElementById('kpi-cost').textContent      = fmtUsd(d.total_cost_usd);
+        document.getElementById('kpi-calls-sub').textContent = fmt(d.total_calls) + ' llamadas registradas';
+        document.getElementById('kpi-tokens').textContent    = fmt(d.total_tokens);
+        document.getElementById('kpi-latency').textContent   = fmtMs(d.avg_latency_ms);
+        document.getElementById('kpi-success').textContent   = d.success_rate + '%';
+        document.getElementById('kpi-total-calls').textContent = fmt(d.total_calls);
+
+        // ── Daily line chart ────────────────────────────────────────────────
+        new Chart(document.getElementById('chart-daily'), {
+            type: 'line',
+            data: {
+                labels: d.daily.map(r => r.date.slice(5)),   // MM-DD
+                datasets: [{
+                    label: 'Llamadas',
+                    data: d.daily.map(r => r.calls),
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,.12)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 3,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                }
+            }
+        });
+
+        // ── Model doughnut ─────────────────────────────────────────────────
+        new Chart(document.getElementById('chart-model'), {
+            type: 'doughnut',
+            data: {
+                labels: d.by_model.map(r => r.model),
+                datasets: [{
+                    data: d.by_model.map(r => r.calls),
+                    backgroundColor: COLORS,
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } }
+                }
+            }
+        });
+
+        // ── Cost bar ───────────────────────────────────────────────────────
+        new Chart(document.getElementById('chart-cost'), {
+            type: 'bar',
+            data: {
+                labels: d.by_model.map(r => r.model),
+                datasets: [{
+                    label: 'USD',
+                    data: d.by_model.map(r => r.cost_usd),
+                    backgroundColor: COLORS,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { beginAtZero: true, ticks: { font: { size: 10 } } }
+                }
+            }
+        });
+
+        // ── Stages table ───────────────────────────────────────────────────
+        const tbody = document.getElementById('stage-table');
+        if (d.by_stage.length === 0) {
+            tbody.innerHTML = '<p class="text-slate-400 text-center py-2">Sin datos</p>';
+        } else {
+            const maxCalls = Math.max(...d.by_stage.map(r => r.calls));
+            tbody.innerHTML = d.by_stage.map((r, i) => `
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${COLORS[i % COLORS.length]}"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline mb-1">
+                            <span class="font-medium text-slate-700 truncate">${r.stage}</span>
+                            <span class="text-slate-400 text-xs ml-2 flex-shrink-0">${fmt(r.calls)} llamadas · ${fmtMs(r.avg_latency_ms)}</span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-slate-100">
+                            <div class="h-1.5 rounded-full" style="width:${Math.round(r.calls/maxCalls*100)}%;background:${COLORS[i % COLORS.length]}"></div>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-500 flex-shrink-0 w-16 text-right">${fmtUsd(r.cost_usd)}</span>
+                </div>
+            `).join('');
+        }
+
+    } catch(e) {
+        console.error('Error cargando metricas:', e);
+        showMetricsError('Sin conexion. Comprueba tu red.');
+    }
+}
+
+loadMetrics();
+loadRagMetrics();
+
+async function loadRagMetrics() {
+    try {
+        const res = await fetch('/api/metrics/rag');
+        if (!res.ok) return;
+        const d = await res.json();
+
+        // RAG quality
+        const rel = d.rag.relevance_pct;
+        document.getElementById('rag-relevance').textContent = rel !== null ? rel + '%' : 'Sin datos';
+        document.getElementById('rag-queries').textContent   = fmt(d.rag.total_queries);
+        document.getElementById('rag-chunks').textContent    = d.rag.avg_chunks !== null
+            ? d.rag.avg_chunks + ' chunks por consulta' : 'Sin consultas aun';
+
+        // Colore el % de relevancia
+        if (rel !== null) {
+            const el = document.getElementById('rag-relevance');
+            el.className = 'text-2xl font-bold ' + (rel >= 70 ? 'text-emerald-600' : rel >= 40 ? 'text-amber-500' : 'text-red-500');
+        }
+
+        // Feedback
+        const fb = d.feedback;
+        if (fb.total > 0) {
+            document.getElementById('fb-ok').textContent = '👍 ' + fb.ok;
+            document.getElementById('fb-ko').textContent = '👎 ' + fb.ko;
+            document.getElementById('feedback-bar-ok').style.width = fb.ok_rate + '%';
+            document.getElementById('fb-rate').textContent =
+                fb.ok_rate + '% de respuestas valoradas positivamente (' + fb.total + ' valoraciones)';
+        }
+    } catch(e) {}
+}
+</script>
+{% endblock %}

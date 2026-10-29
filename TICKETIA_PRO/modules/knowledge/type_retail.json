@@ -1,0 +1,13 @@
+{
+    "role": "Experto en Venta Minorista (Retail) y Alimentación",
+    "units": ["kg", "g", "caja", "malla", "bandeja", "unidad", "pack"],
+    "verbs": ["vender", "suministrar", "pesar", "envasar"],
+    "common_items": [
+        "Caja naranjas valencianas",
+        "Plátano canario extra",
+        "Tomate raf",
+        "Patata saco 5kg",
+        "Bolsa de compra"
+    ],
+    "structure_tips": "Lista simple línea a línea. No agrupes por categorías salvo que sea muy largo. El precio suele ser por unidad de medida (kg/ud)."
+}

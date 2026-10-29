@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% block title %}Documentos — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 pb-24 max-w-4xl mx-auto w-full" x-data="{ tab: 'proposals' }">
+
+    <header class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Mis Documentos</h1>
+            <p class="text-slate-500 mt-2 font-medium">Presupuestos e imágenes generadas</p>
+        </div>
+        <a href="{{ url_for('web.dashboard') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold">
+            ← Volver
+        </a>
+    </header>
+
+    <!-- TABS NAVIGATION -->
+    <div class="mb-6 border-b border-slate-200 overflow-x-auto no-scrollbar">
+        <div class="flex gap-6 -mb-px min-w-max px-2">
+            <button @click="tab = 'proposals'"
+                :class="{ 'border-indigo-600 text-indigo-600': tab === 'proposals', 'border-transparent text-slate-500 hover:text-slate-700': tab !== 'proposals' }"
+                class="pb-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap">
+                📄 Presupuestos <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{{ proposals|length }}</span>
+            </button>
+            <button @click="tab = 'invoices'"
+                :class="{ 'border-green-600 text-green-600': tab === 'invoices', 'border-transparent text-slate-500 hover:text-slate-700': tab !== 'invoices' }"
+                class="pb-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap">
+                🧾 Facturas <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{{ invoices|length }}</span>
+            </button>
+            <button @click="tab = 'images'"
+                :class="{ 'border-purple-600 text-purple-600': tab === 'images', 'border-transparent text-slate-500 hover:text-slate-700': tab !== 'images' }"
+                class="pb-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap">
+                🖼️ Imágenes <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{{ images|length }}</span>
+            </button>
+            <button @click="tab = 'presentations'"
+                :class="{ 'border-orange-500 text-orange-500': tab === 'presentations', 'border-transparent text-slate-500 hover:text-slate-700': tab !== 'presentations' }"
+                class="pb-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap">
+                📊 Presentaciones <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{{ presentations|length }}</span>
+            </button>
+            <button @click="tab = 'videos'"
+                :class="{ 'border-pink-500 text-pink-500': tab === 'videos', 'border-transparent text-slate-500 hover:text-slate-700': tab !== 'videos' }"
+                class="pb-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap">
+                🎬 Video Prompts <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{{ videos|length }}</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- PRESUPUESTOS -->
+    <div x-show="tab === 'proposals'">
+        {% if proposals %}
+        <div class="grid md:grid-cols-2 gap-4">
+            {% for doc in proposals %}
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-xl">📄</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">{{ doc.client_name or 'Presupuesto' }}</h4>
+                            <p class="text-slate-400 text-xs">{{ doc.created_at.strftime('%d/%m/%Y %H:%M') if doc.created_at else '' }}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteDocument({{ doc.id }}, this)"
+                        class="text-slate-300 hover:text-red-400 transition-colors p-1 text-lg leading-none">✕</button>
+                </div>
+                <div class="flex gap-2 mt-1">
+                    <a href="{{ doc.file_path }}" target="_blank"
+                        class="flex-1 text-center text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-xl transition-colors">
+                        Ver PDF ↗
+                    </a>
+                    <a href="{{ doc.file_path }}" download
+                        class="flex-1 text-center text-xs font-bold bg-slate-50 text-slate-600 hover:bg-slate-100 px-3 py-2 rounded-xl transition-colors">
+                        Descargar
+                    </a>
+                    {% if doc.doc_data %}
+                    <button onclick="openInvoiceModal({{ doc.id }})"
+                        class="flex-1 text-center text-xs font-bold bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded-xl transition-colors">
+                        🧾 Facturar
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <div class="text-5xl mb-4">📄</div>
+            <p class="text-slate-400 font-medium mb-1">No hay presupuestos aún</p>
+            <p class="text-xs text-slate-300">Pídele al asistente que genere uno por voz o texto</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- FACTURAS -->
+    <div x-show="tab === 'invoices'" style="display:none">
+        {% if invoices %}
+        <div class="grid md:grid-cols-2 gap-4">
+            {% for doc in invoices %}
+            {% set status_map = {'draft': ('Borrador','bg-slate-100 text-slate-600'), 'sent': ('Enviada','bg-blue-100 text-blue-700'), 'paid': ('Cobrada','bg-green-100 text-green-700')} %}
+            {% set st = doc.invoice_status or 'draft' %}
+            {% set st_label, st_class = status_map.get(st, ('Borrador','bg-slate-100 text-slate-600')) %}
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3" id="inv-card-{{ doc.id }}">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-xl">🧾</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">{{ doc.invoice_number or '—' }}</h4>
+                            <p class="text-slate-500 text-xs font-medium">{{ doc.client_name or 'Cliente' }}</p>
+                            <p class="text-slate-400 text-xs">{{ doc.created_at.strftime('%d/%m/%Y') if doc.created_at else '' }}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full {{ st_class }}" id="inv-badge-{{ doc.id }}">{{ st_label }}</span>
+                </div>
+                {% if doc.total_amount %}
+                <div class="flex gap-3 text-xs text-slate-500 bg-slate-50 rounded-xl px-3 py-2">
+                    <span>Base: <strong>{{ "%.2f"|format(doc.subtotal or 0) }}€</strong></span>
+                    <span>IVA: <strong>{{ "%.2f"|format(doc.vat_amount or 0) }}€</strong></span>
+                    <span class="ml-auto font-bold text-slate-800">Total: {{ "%.2f"|format(doc.total_amount) }}€</span>
+                </div>
+                {% endif %}
+                <div class="flex gap-2 mt-1 flex-wrap">
+                    <a href="{{ doc.file_path }}" target="_blank"
+                        class="flex-1 text-center text-xs font-bold bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded-xl transition-colors">
+                        Ver PDF ↗
+                    </a>
+                    {% if st == 'draft' %}
+                    <button onclick="updateInvoiceStatus({{ doc.id }}, 'sent')"
+                        class="flex-1 text-center text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-2 rounded-xl transition-colors">
+                        Marcar enviada
+                    </button>
+                    {% endif %}
+                    {% if st in ('draft', 'sent') %}
+                    <button onclick="updateInvoiceStatus({{ doc.id }}, 'paid')"
+                        class="flex-1 text-center text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-2 rounded-xl transition-colors">
+                        Marcar cobrada ✓
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <div class="text-5xl mb-4">🧾</div>
+            <p class="text-slate-400 font-medium mb-1">No hay facturas aún</p>
+            <p class="text-xs text-slate-300">Genera un presupuesto y conviértelo en factura</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- IMÁGENES -->
+    <div x-show="tab === 'images'" style="display:none">
+        {% if images %}
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {% for doc in images %}
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden group relative">
+                <img src="{{ doc.file_path }}" alt="Imagen generada"
+                    class="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="p-3 flex justify-between items-center">
+                    <p class="text-xs text-slate-400">{{ doc.created_at.strftime('%d/%m/%Y') if doc.created_at else '' }}</p>
+                    <div class="flex gap-2">
+                        <a href="{{ doc.file_path }}" target="_blank" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Ver ↗</a>
+                        <button onclick="deleteDocument({{ doc.id }}, this)" class="text-xs text-slate-300 hover:text-red-400">✕</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <div class="text-5xl mb-4">🖼️</div>
+            <p class="text-slate-400 font-medium mb-1">No hay imágenes generadas</p>
+            <p class="text-xs text-slate-300">Pide al asistente que cree imágenes de marketing</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- PRESENTACIONES -->
+    <div x-show="tab === 'presentations'" style="display:none">
+        {% if presentations %}
+        <div class="grid md:grid-cols-2 gap-4">
+            {% for doc in presentations %}
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-xl">📊</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">{{ doc.client_name or 'Presentación' }}</h4>
+                            <p class="text-slate-400 text-xs">{{ doc.created_at.strftime('%d/%m/%Y %H:%M') if doc.created_at else '' }}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteDocument({{ doc.id }}, this)"
+                        class="text-slate-300 hover:text-red-400 transition-colors p-1 text-lg leading-none">✕</button>
+                </div>
+                <a href="{{ doc.file_path }}" target="_blank"
+                    class="text-center text-xs font-bold bg-orange-50 text-orange-700 hover:bg-orange-100 px-3 py-2 rounded-xl transition-colors">
+                    Ver presentación ↗
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <div class="text-5xl mb-4">📊</div>
+            <p class="text-slate-400 font-medium mb-1">No hay presentaciones</p>
+            <p class="text-xs text-slate-300">Pide al asistente que prepare una presentación</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- VIDEOS -->
+    <div x-show="tab === 'videos'" style="display:none">
+        {% if videos %}
+        <div class="grid md:grid-cols-2 gap-4">
+            {% for doc in videos %}
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <video src="{{ doc.file_path }}" controls class="w-full aspect-video object-cover bg-slate-900"></video>
+                <div class="p-3 flex justify-between items-center">
+                    <p class="text-xs text-slate-400">{{ doc.created_at.strftime('%d/%m/%Y') if doc.created_at else '' }}</p>
+                    <button onclick="deleteDocument({{ doc.id }}, this)" class="text-xs text-slate-300 hover:text-red-400">✕</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <div class="text-5xl mb-4">🎬</div>
+            <p class="text-slate-400 font-medium mb-1">No hay vídeos</p>
+            <p class="text-xs text-slate-300">Sube una foto de producto para generar un vídeo</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- FAB para crear vídeo -->
+    <div class="fixed bottom-24 right-6 z-50 md:bottom-12" x-show="tab === 'videos'" style="display: none;">
+        <button onclick="document.getElementById('videoUploadInput').click()"
+            class="bg-pink-600 hover:bg-pink-700 text-white p-4 rounded-full shadow-lg transition-transform transform active:scale-95 flex items-center gap-2 animate-bounce-in">
+            ✨ <span class="hidden md:inline font-bold">Crear Nuevo Vídeo</span>
+            <span class="md:hidden font-bold">Crear</span>
+        </button>
+        <input type="file" id="videoUploadInput" class="hidden" accept="image/*" onchange="uploadImageForVideo(this)">
+    </div>
+
+    <!-- Modal Convertir a Factura -->
+    <div id="invoiceModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden flex items-end md:items-center justify-center p-4" onclick="closeInvoiceModal()">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="text-center mb-5">
+                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">🧾</div>
+                <h3 class="text-lg font-bold text-slate-800">Convertir a Factura</h3>
+                <p class="text-sm text-slate-500 mt-1">Se generará una factura numerada con los datos del presupuesto.</p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">NIF / CIF del cliente (opcional)</label>
+                <input id="invoiceClientNif" type="text" placeholder="Ej: 12345678A"
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 outline-none focus:border-green-500 transition-colors">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeInvoiceModal()" class="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmInvoiceBtn" onclick="confirmConvertToInvoice()"
+                    class="flex-1 py-3 rounded-2xl bg-green-600 text-white font-bold text-sm hover:bg-green-700 transition-colors shadow-lg shadow-green-200">
+                    Generar Factura
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let _pendingInvoiceDocId = null;
+
+        function openInvoiceModal(docId) {
+            _pendingInvoiceDocId = docId;
+            document.getElementById('invoiceClientNif').value = '';
+            document.getElementById('invoiceModal').classList.remove('hidden');
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoiceModal').classList.add('hidden');
+            _pendingInvoiceDocId = null;
+        }
+
+        async function confirmConvertToInvoice() {
+            if (!_pendingInvoiceDocId) return;
+            const btn = document.getElementById('confirmInvoiceBtn');
+            const nif = document.getElementById('invoiceClientNif').value.trim();
+            btn.disabled = true;
+            btn.textContent = 'Generando...';
+            try {
+                const res  = await fetch(`/api/documents/${_pendingInvoiceDocId}/to-invoice`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ client_nif: nif }),
+                });
+                const data = await res.json();
+                closeInvoiceModal();
+                if (res.ok) {
+                    window.showToast && window.showToast(`Factura ${data.invoice_number} generada correctamente`, 'success');
+                    setTimeout(() => {
+                        const url = new URL(location.href);
+                        url.searchParams.set('tab', 'invoices');
+                        location.href = url.toString();
+                    }, 800);
+                } else {
+                    window.showToast && window.showToast(data.error || 'Error generando factura', 'error');
+                }
+            } catch (e) {
+                closeInvoiceModal();
+                window.showToast && window.showToast('Error de conexión', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generar Factura';
+            }
+        }
+
+        async function updateInvoiceStatus(docId, newStatus) {
+            try {
+                const res  = await fetch(`/api/invoices/${docId}/status`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: newStatus }),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    const labels = { draft: 'Borrador', sent: 'Enviada', paid: 'Cobrada' };
+                    const classes = {
+                        draft: 'bg-slate-100 text-slate-600',
+                        sent:  'bg-blue-100 text-blue-700',
+                        paid:  'bg-green-100 text-green-700',
+                    };
+                    const badge = document.getElementById(`inv-badge-${docId}`);
+                    if (badge) {
+                        badge.textContent = labels[newStatus] || newStatus;
+                        badge.className   = `text-xs font-bold px-2 py-1 rounded-full ${classes[newStatus] || ''}`;
+                    }
+                    // Refrescar para ocultar botones no válidos tras la transición
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    window.showToast && window.showToast(data.error || 'Error actualizando estado', 'error');
+                }
+            } catch (e) {
+                window.showToast && window.showToast('Error de conexión', 'error');
+            }
+        }
+
+        // Activar tab desde query param (usado tras convertir a factura)
+        const _urlTab = new URLSearchParams(location.search).get('tab');
+        if (_urlTab) {
+            document.addEventListener('alpine:init', () => {});
+            window.addEventListener('load', () => {
+                const btn = document.querySelector(`[\\@click="tab = '${_urlTab}'"]`);
+                if (btn) btn.click();
+            });
+        }
+
+        async function uploadImageForVideo(input) {
+            if (input.files && input.files[0]) {
+                const formData = new FormData();
+                formData.append('image', input.files[0]);
+                const btn = document.querySelector('button[onclick*="videoUploadInput"]');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = "⏳ Analizando & Renderizando (1-2 min)...";
+                btn.classList.add('opacity-75', 'cursor-wait');
+                btn.disabled = true;
+                try {
+                    const response = await fetch('/generate_video_from_image', { method: 'POST', body: formData });
+                    const data = await response.json();
+                    if (data.success) {
+                        btn.innerHTML = "✅ ¡Vídeo Listo!";
+                        btn.classList.remove('bg-pink-600');
+                        btn.classList.add('bg-green-600');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        window.showToast && window.showToast('Error: ' + data.error, 'error');
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-75', 'cursor-wait');
+                    }
+                } catch (e) {
+                    window.showToast && window.showToast('Error de conexion', 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        let _pendingDeleteId   = null;
+        let _pendingDeleteCard = null;
+
+        function deleteDocument(docId, btnElement) {
+            _pendingDeleteId   = docId;
+            _pendingDeleteCard = btnElement.closest('.bg-white');
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            _pendingDeleteId   = null;
+            _pendingDeleteCard = null;
+        }
+
+        async function confirmDelete() {
+            if (!_pendingDeleteId) return;
+            const card = _pendingDeleteCard;
+            const btn  = document.getElementById('confirmDeleteBtn');
+            btn.disabled = true;
+            btn.textContent = 'Eliminando...';
+            if (card) { card.style.opacity = '0.4'; card.style.pointerEvents = 'none'; }
+            document.getElementById('deleteModal').classList.add('hidden');
+
+            try {
+                const res  = await fetch(`/delete_document/${_pendingDeleteId}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    if (card) {
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.opacity    = '0';
+                        card.style.transform  = 'scale(0.9)';
+                        setTimeout(() => card.remove(), 300);
+                    } else { location.reload(); }
+                } else {
+                    // Rollback visual
+                    if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'all'; }
+                    window.showToast && window.showToast('Error al eliminar: ' + data.error, 'error');
+                }
+            } catch (e) {
+                if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'all'; }
+                window.showToast && window.showToast('Error de conexion. El archivo no fue eliminado.', 'error');
+            } finally {
+                btn.disabled    = false;
+                btn.textContent = 'Eliminar';
+                _pendingDeleteId   = null;
+                _pendingDeleteCard = null;
+            }
+        }
+    </script>
+
+    <!-- Confirm Delete Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden flex items-end md:items-center justify-center p-4" onclick="closeDeleteModal()">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="text-center mb-5">
+                <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">🗑️</div>
+                <h3 class="text-lg font-bold text-slate-800">Eliminar archivo</h3>
+                <p class="text-sm text-slate-500 mt-1">Esta accion no se puede deshacer.</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmDeleteBtn" onclick="confirmDelete()" class="flex-1 py-3 rounded-2xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-200">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Build CSP de Alpine: sin eval()/new Function(), no requiere 'unsafe-eval' en el CSP.
+         OJO: la URL corta sin /dist/cdn.min.js resuelve al fichero CommonJS (module.cjs.js),
+         que revienta en el navegador con "module is not defined" -- hay que apuntar al fichero exacto. -->
+    <script src="//unpkg.com/@alpinejs/csp@3.17.1/dist/cdn.min.js" defer></script>
+
+</div>
+{% endblock %}

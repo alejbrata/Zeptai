@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Tienda de Agentes — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 pb-24 max-w-lg mx-auto w-full">
+
+    <header class="mb-8">
+        <a href="{{ url_for('web.dashboard') }}" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Inicio</a>
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight mt-2">Tienda IA <span class="text-indigo-600">🚀</span></h1>
+        <p class="text-slate-500 mt-2 font-medium">Activa superpoderes para tu negocio.</p>
+    </header>
+
+    <div class="space-y-6">
+
+        <!-- Grant Hunter -->
+        {% with
+        id="grant_hunter",
+        icon="💰",
+        title="Grant Hunter",
+        desc="Busca y te avisa de subvenciones activas para tu sector.",
+        guide="Usa el 'Sector' definido en '✨ Entrenar IA'. Se ejecuta automáticamente cada noche.",
+        active=("grant_hunter" in current_user.active_agents)
+        %}
+        {% include "components/agent_card.html" %}
+        {% endwith %}
+
+        <!-- Business Coach -->
+        {% with
+        id="business_health",
+        icon="🩺",
+        title="Business Coach",
+        desc="Analiza tus gastos y te da consejos financieros diarios.",
+        guide="Necesita al menos 5 tickets de gasto registrados para generar análisis útiles. Se ejecuta cada mañana.",
+        active=("business_health" in current_user.active_agents)
+        %}
+        {% include "components/agent_card.html" %}
+        {% endwith %}
+
+        <!-- Networker -->
+        {% with
+        id="networker",
+        icon="🤝",
+        title="Networker",
+        desc="Te conecta con otros negocios de Zeptai para sinergias.",
+        guide="Compara tu sector y servicios con otros usuarios para sugerir colaboraciones. Requiere perfil completo en '✨ Entrenar IA'.",
+        active=("networker" in current_user.active_agents)
+        %}
+        {% include "components/agent_card.html" %}
+        {% endwith %}
+
+        <!-- Post-Sales Service -->
+        {% with
+        id="post_sales_service",
+        icon="⭐",
+        title="Post-Venta & Feedback",
+        desc="Contacta a tus clientes 24h después para pedir valoración.",
+        guide="Requiere que uses la Agenda para citas. Envía WhatsApp automático.",
+        active=("post_sales_service" in current_user.active_agents)
+        %}
+        {% include "components/agent_card.html" %}
+        {% endwith %}
+
+        <!-- Admin Assistant -->
+        {% with
+        id="admin_redactor",
+        icon="📝",
+        title="Generador de Presupuestos",
+        desc="Transforma fotos de notas o servilletas en PDFs profesionales.",
+        guide="Sube una foto de tus apuntes y la IA detectará si es para presupuesto.",
+        active=("admin_redactor" in current_user.active_agents)
+        %}
+        {% include "components/agent_card.html" %}
+        {% endwith %}
+
+    </div>
+</div>
+{% endblock %}

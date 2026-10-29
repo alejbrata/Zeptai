@@ -1,0 +1,56 @@
+# Control de versiones
+.git
+.gitignore
+
+# Secretos — NUNCA deben estar en la imagen
+.env
+*.env
+
+# Cache y compilados Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Tests y coverage
+.pytest_cache/
+.coverage
+htmlcov/
+test_docker/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Bases de datos locales (la de produccion va en el volumen de Docker)
+*.sqlite3
+*.db
+TICKETIA_PRO/instance/
+
+# Uploads y docs generados (van en volumenes Docker)
+TICKETIA_PRO/static/uploads/
+TICKETIA_PRO/static/generated_docs/
+
+# Backups y archivos temporales
+TICKETIA_PRO/backups/
+*.zip
+*.log
+
+# Documentacion y ficheros del repo que no necesita el contenedor
+PROPUESTA_TFM_TICKETIA.md
+ARCHITECTURE_DEFENSE.md
+generar_pdf_defensa.py
+zip_delivery.py
+TICKETIA_PRO/GUIA_PRUEBAS_MCP.md
+TICKETIA_PRO/README_DEFENSA.md
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

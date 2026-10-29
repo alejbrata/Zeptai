@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Zeptai | Inteligencia de Negocio{% endblock %}</title>
+
+    <!-- PWA Settings -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo_zeptai.png') }}">
+
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        /* Safe area for mobile nav */
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 h-screen flex flex-col" data-logged-in="{{ 'true' if session.get('user_phone') else 'false' }}">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-100 px-5 py-3.5 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('web.dashboard') }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <img src="{{ url_for('static', filename='logo_zeptai.png') }}" class="w-8 h-8 rounded-lg shadow-sm" alt="Zeptai Logo">
+                <span class="font-bold text-xl tracking-tight text-slate-800">Zeptai</span>
+            </a>
+            {% if session.get('user_phone') %}
+            <button onclick="toggleNotifications()" aria-label="Notificaciones" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span id="notif-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white {{ 'hidden' if unread_notifications_count == 0 else '' }}"></span>
+            </button>
+            <a href="{{ url_for('web.demo_panel') }}" class="text-xs font-semibold text-slate-500 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-full border border-slate-200 transition-colors">Demo</a>
+            {% endif %}
+        </div>
+
+        {% if session.get('user_phone') %}
+        <!-- Hamburger button -->
+        <button onclick="toggleNavMenu()" id="hamburger-btn"
+            class="w-9 h-9 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-slate-100 transition-colors"
+            aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="nav-drawer">
+            <span class="w-5 h-0.5 bg-slate-600 rounded-full transition-all duration-300 origin-center" id="hbg-top"></span>
+            <span class="w-5 h-0.5 bg-slate-600 rounded-full transition-all duration-300" id="hbg-mid"></span>
+            <span class="w-5 h-0.5 bg-slate-600 rounded-full transition-all duration-300 origin-center" id="hbg-bot"></span>
+        </button>
+        {% endif %}
+    </nav>
+
+    <!-- Nav Drawer (slide from right) -->
+    {% if session.get('user_phone') %}
+    {% set nav_active_drawer = 'bg-indigo-50 text-indigo-700 font-semibold' %}
+    {% set nav_idle_drawer = 'text-slate-600 hover:bg-slate-50 hover:text-indigo-600' %}
+    <div id="nav-drawer" class="fixed inset-y-0 right-0 w-4/5 max-w-xs bg-white shadow-2xl z-[90] transform translate-x-full transition-transform duration-300 flex flex-col">
+        <!-- Header -->
+        <div class="px-5 py-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+                <p class="font-bold text-slate-800 text-base">{{ session.get('business_name', 'Mi Negocio') }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ session.get('user_phone', '') }}</p>
+            </div>
+            <button onclick="toggleNavMenu()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <!-- Nav links -->
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+            <a href="{{ url_for('web.dashboard') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'dashboard' else nav_idle_drawer }}">
+                <span class="text-lg">📊</span><span>Inicio</span>
+            </a>
+            <a href="{{ url_for('web.wizard') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'wizard' else nav_idle_drawer }}">
+                <span class="text-lg">✨</span><span>Entrenar IA</span>
+            </a>
+            <a href="{{ url_for('web.marketplace') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'marketplace' else nav_idle_drawer }}">
+                <span class="text-lg">🛍️</span><span>Tienda de Agentes</span>
+            </a>
+            <a href="{{ url_for('web.documents_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'documents' else nav_idle_drawer }}">
+                <span class="text-lg">📂</span><span>Documentos</span>
+            </a>
+            <a href="{{ url_for('knowledge.knowledge_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'knowledge' else nav_idle_drawer }}">
+                <span class="text-lg">📚</span><span>Base de Conocimiento</span>
+            </a>
+            <a href="{{ url_for('web.agents_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'agents' else nav_idle_drawer }}">
+                <span class="text-lg">🤖</span><span>Agentes</span>
+            </a>
+            <a href="{{ url_for('web.marketing_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'marketing' else nav_idle_drawer }}">
+                <span class="text-lg">🎬</span><span>Reels</span>
+            </a>
+            <a href="{{ url_for('web.council_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'council' else nav_idle_drawer }}">
+                <span class="text-lg">🏛️</span><span>Consejo Pyme</span>
+            </a>
+            <a href="{{ url_for('web.agenda') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'agenda' else nav_idle_drawer }}">
+                <span class="text-lg">📅</span><span>Agenda</span>
+            </a>
+            <a href="{{ url_for('web.networking') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'networking' else nav_idle_drawer }}">
+                <span class="text-lg">🤝</span><span>Networking</span>
+            </a>
+            <a href="{{ url_for('web.metrics_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'metrics' else nav_idle_drawer }}">
+                <span class="text-lg">📈</span><span>Métricas</span>
+            </a>
+            <a href="{{ url_for('web.chatbot_cliente') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'chatbot_cliente' else nav_idle_drawer }}">
+                <span class="text-lg">💬</span><span>Chatbot Cliente</span>
+            </a>
+            <a href="{{ url_for('web.profile') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'profile' else nav_idle_drawer }}">
+                <span class="text-lg">👤</span><span>Mi Perfil</span>
+            </a>
+            <a href="{{ url_for('web.eval_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'eval' else nav_idle_drawer }}">
+                <span class="text-lg">🧪</span><span>Evaluación RAG</span>
+            </a>
+            {% if is_admin %}
+            <a href="{{ url_for('web.observabilidad_page') }}" onclick="toggleNavMenu()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors {{ nav_active_drawer if current_page == 'observabilidad' else nav_idle_drawer }}">
+                <span class="text-lg">🔭</span><span>Observabilidad</span>
+            </a>
+            <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors text-slate-600 hover:bg-slate-50">
+                <span class="text-lg">🛡️</span><span>Admin</span>
+            </a>
+            {% endif %}
+        </nav>
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-100">
+            <a href="{{ url_for('web.logout') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 transition-colors font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <span>Cerrar Sesión</span>
+            </a>
+        </div>
+    </div>
+    <div id="nav-overlay" onclick="toggleNavMenu()" class="fixed inset-0 bg-black/30 z-[89] hidden transition-opacity backdrop-blur-sm"></div>
+    {% endif %}
+
+    <!-- NOTIFICATIONS DRAWER -->
+    <div id="notif-drawer" class="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-[80] transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="font-bold text-base text-slate-800">Notificaciones</h3>
+            <div class="flex gap-3 items-center">
+                <button onclick="markAllRead()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 py-1">Marcar leídas</button>
+                <button onclick="toggleNotifications()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500">✕</button>
+            </div>
+        </div>
+        
+        <div id="notif-list" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+            <!-- Loading State -->
+            <div class="text-center py-10 text-slate-400 animate-pulse">Cargando...</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col relative overflow-y-auto" id="main-content">
+        <!-- Overlay for Drawer -->
+        <div id="drawer-overlay" onclick="toggleNotifications()" class="fixed inset-0 bg-black/20 z-[70] hidden transition-opacity"></div>
+
+        <!-- Flash Messages (Server Side) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="px-6 py-4 absolute top-0 w-full z-40 pointer-events-none space-y-2" id="flash-container">
+            {% for category, message in messages %}
+            <div class="flash-msg p-4 rounded-xl shadow-lg text-sm font-bold animate-fade-in-up mx-auto max-w-sm pointer-events-auto transition-all duration-500
+                            {% if category == 'error' %} bg-red-500 text-white
+                            {% elif category == 'success' %} bg-green-500 text-white
+                            {% else %} bg-blue-500 text-white {% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        <script>
+            document.querySelectorAll('.flash-msg').forEach(function(el) {
+                setTimeout(function() {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(-8px)';
+                    setTimeout(function() { el.remove(); }, 500);
+                }, 3500);
+            });
+        </script>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Toast Messages (Client Side) -->
+        <div id="toast-container" class="px-6 py-4 absolute top-0 w-full z-50 pointer-events-none flex flex-col items-center gap-2"></div>
+
+        {% block content %}{% endblock %}
+
+        <!-- Footer legal -->
+        <footer class="text-center text-xs text-slate-400 py-4 px-6 mt-auto">
+            <a href="{{ url_for('web.privacy_policy') }}" class="hover:text-indigo-600 transition-colors underline">Política de Privacidad</a>
+            <span class="mx-2">·</span>
+            <a href="{{ url_for('web.compliance') }}" class="hover:text-indigo-600 transition-colors underline">Cumplimiento Normativo</a>
+            <span class="mx-2">·</span>
+            <a href="{{ url_for('web.codigo_conducta') }}" class="hover:text-indigo-600 transition-colors underline">Código de Conducta IA</a>
+            <span class="mx-2">·</span>
+            <span>Zeptai usa IA (GPT-4o). Las respuestas son orientativas.</span>
+        </footer>
+    </main>
+
+    <script>
+        // Escapa HTML antes de interpolar texto no confiable en innerHTML (previene XSS
+        // almacenado: business_name de otro usuario, contenido generado por LLM, etc.)
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Solo permite enlaces relativos o http(s) — bloquea javascript: y otros esquemas peligrosos.
+        function safeHref(url) {
+            if (!url) return '';
+            const trimmed = String(url).trim();
+            if (trimmed.startsWith('/') || /^https?:\/\//i.test(trimmed)) return trimmed;
+            return '#';
+        }
+
+        // --- NOTIFICATIONS LOGIC ---
+        let drawerOpen = false;
+
+        function toggleNotifications() {
+            drawerOpen = !drawerOpen;
+            const drawer = document.getElementById('notif-drawer');
+            const overlay = document.getElementById('drawer-overlay');
+            
+            if (drawerOpen) {
+                drawer.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Lock scroll
+                fetchNotifications();
+            } else {
+                drawer.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        async function fetchNotifications() {
+            try {
+                const res = await fetch('/api/notifications');
+                const data = await res.json();
+                renderNotifications(data);
+                
+                // Update Badge
+                const unread = data.filter(n => !n.is_read).length;
+                updateBadge(unread);
+                
+            } catch (e) {
+                console.error("Error fetching notifications", e);
+            }
+        }
+
+        function renderNotifications(list) {
+            const container = document.getElementById('notif-list');
+            if (!list.length) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-400">
+                    <div class="text-4xl mb-2">😴</div>
+                    No hay notificaciones
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(n => {
+                // Estilo condicional para ALERTAS
+                const isAlert = n.type === 'alert';
+                const bgClass = isAlert ? 'bg-red-50 border-red-100' : (n.is_read ? 'bg-white border-slate-100 opacity-60' : 'bg-indigo-50 border-indigo-100 shadow-sm');
+                const typeColor = isAlert ? 'text-red-600' : (n.type === 'grant' ? 'text-emerald-600' : 'text-indigo-600');
+                const titleColor = isAlert ? 'text-red-800' : 'text-slate-800';
+
+                const safeLink = safeHref(n.link);
+                return `
+                <div class="p-4 rounded-xl border transition-all ${bgClass}">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-xs font-bold uppercase tracking-wider ${typeColor}">
+                            ${isAlert ? '🚨 ' : ''}${escapeHtml(n.type || 'INFO')}
+                        </span>
+                        <span class="text-[10px] text-slate-400">${escapeHtml(n.date)}</span>
+                    </div>
+                    <h4 class="font-bold ${titleColor} text-sm mb-1">${escapeHtml(n.title)}</h4>
+                    <p class="text-slate-600 text-xs mb-3 leading-relaxed">${escapeHtml(n.message)}</p>
+
+                    <div class="flex gap-2 justify-end">
+                        ${n.link ? `<a href="${safeLink}" ${safeLink.startsWith('http') ? 'target="_blank" rel="noopener noreferrer"' : ''} class="text-xs font-bold text-indigo-600 bg-white border border-indigo-100 px-3 py-1.5 rounded-lg hover:bg-indigo-50">Ver detalle ↗</a>` : ''}
+                        ${!n.is_read ? `<button onclick="markOneRead(${n.id})" class="text-xs font-bold text-slate-400 hover:text-slate-600 px-2 py-1.5">Marcar leído</button>` : ''}
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        async function markOneRead(id) {
+            await fetch(`/api/notifications/mark_read/${id}`, { method: 'POST' });
+            fetchNotifications(); // Refresh list
+        }
+        
+        async function markAllRead() {
+             await fetch('/api/notifications/mark_all_read', { method: 'POST' });
+             fetchNotifications();
+             window.showToast("Todo marcado como leído ✅", "success");
+        }
+
+        function updateBadge(count) {
+            const badge = document.getElementById('notif-badge');
+            const bellBtn = badge ? badge.closest('button') : null;
+            if (count > 0) {
+                badge.classList.remove('hidden');
+                if (bellBtn) bellBtn.setAttribute('aria-label', `Notificaciones — ${count} sin leer`);
+            } else {
+                badge.classList.add('hidden');
+                if (bellBtn) bellBtn.setAttribute('aria-label', 'Notificaciones');
+            }
+        }
+
+        // --- POLLING: actualiza el badge cada 15s sin abrir el drawer ---
+        let _lastUnreadCount = {{ unread_notifications_count }};
+
+        async function pollUnreadCount() {
+            try {
+                const res = await fetch('/api/notifications/unread_count');
+                if (res.status === 401) return; // sesión expirada, silencioso
+                const data = await res.json();
+                const newCount = data.count || 0;
+                if (newCount > _lastUnreadCount) {
+                    updateBadge(newCount);
+                    window.showToast('Tienes nuevas notificaciones 🔔', 'info');
+                } else {
+                    updateBadge(newCount);
+                }
+                _lastUnreadCount = newCount;
+            } catch (e) { /* silencioso */ }
+        }
+
+        {% if session.get('user_phone') %}
+        setInterval(pollUnreadCount, 15000);
+        {% endif %}
+
+        // Nav Drawer toggle
+        window.toggleNavMenu = function() {
+            const drawer  = document.getElementById('nav-drawer');
+            const overlay = document.getElementById('nav-overlay');
+            const btn     = document.getElementById('hamburger-btn');
+            const top     = document.getElementById('hbg-top');
+            const mid     = document.getElementById('hbg-mid');
+            const bot     = document.getElementById('hbg-bot');
+            if (!drawer) return;
+            const isOpen = !drawer.classList.contains('translate-x-full');
+            drawer.classList.toggle('translate-x-full', isOpen);
+            overlay.classList.toggle('hidden', isOpen);
+
+            // Hamburger → ✕ animation
+            if (!isOpen) {
+                // Now open: animate to ✕
+                top.style.transform = 'translateY(6px) rotate(45deg)';
+                mid.style.opacity = '0';
+                mid.style.transform = 'scaleX(0)';
+                bot.style.transform = 'translateY(-6px) rotate(-45deg)';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', 'Cerrar menú de navegación');
+            } else {
+                // Now closed: back to ☰
+                top.style.transform = '';
+                mid.style.opacity = '';
+                mid.style.transform = '';
+                bot.style.transform = '';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.setAttribute('aria-label', 'Abrir menú de navegación');
+            }
+        };
+
+        // Global Toast System
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Tailwind Colors
+            const bgClass = type === 'error' ? 'bg-red-500' : 
+                          type === 'success' ? 'bg-green-500' : 'bg-blue-600';
+            
+            toast.className = `p-4 rounded-xl shadow-lg text-white text-sm font-bold animate-bounce-in max-w-sm w-full pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-3 ${bgClass}`;
+            
+            // Icon based on type
+            const icon = type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+            
+            toast.innerHTML = `<span>${icon}</span><span class="flex-1">${escapeHtml(message)}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Auto-remove after 3s
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+    </script>
+
+    <!-- CHAT WIDGET (GLOBAL) -->
+    {% if session.get('user_phone') %}
+    <div class="fixed bottom-6 right-4 z-50 flex flex-col items-end gap-2 md:bottom-10 md:right-8">
+        <!-- Chat Window -->
+        <div id="chatWindow"
+            class="bg-white w-[calc(100vw-2rem)] md:w-80 h-[420px] md:h-96 max-h-[75vh] rounded-2xl shadow-2xl flex flex-col hidden overflow-hidden border border-slate-200 transition-all mb-4 origin-bottom-right animate-scale-in">
+            <!-- Header -->
+            <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <img src="{{ url_for('static', filename='logo_zeptai.png') }}"
+                        class="w-6 h-6 rounded-md bg-white p-0.5">
+                    <div>
+                        <h3 class="font-bold text-sm">Asistente Zeptai</h3>
+                        <p class="text-xs text-indigo-200">En línea</p>
+                    </div>
+                </div>
+                <button onclick="toggleChat()" class="hover:bg-indigo-700 p-1 rounded text-white font-bold">✕</button>
+            </div>
+            <!-- Messages -->
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50">
+                <div class="flex justify-start">
+                    <div
+                        class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl shadow-sm text-sm">
+                        ¡Hola! Soy tu asistente IA. ¿En qué puedo ayudarte hoy?
+                    </div>
+                </div>
+            </div>
+            <!-- Input -->
+            <div class="p-3 border-t border-slate-100 bg-white flex gap-2">
+                <input type="text" id="chatInput" placeholder="Escribe tu duda..."
+                    class="flex-1 bg-slate-100 border-0 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
+                    onkeypress="handleChatKey(event)">
+                <button onclick="sendChatMessage()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-95 shadow-lg shadow-indigo-200">
+                    ➤
+                </button>
+            </div>
+        </div>
+
+        <!-- Toggle Button -->
+        <button onclick="toggleChat()"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-3xl transition-transform transform active:scale-95 hover:scale-105 border-4 border-white/20">
+            💬
+        </button>
+    </div>
+
+    <script>
+        let _lastChatMsg = '';
+
+        function retryLastMessage() {
+            if (!_lastChatMsg) return;
+            // Remove error bubble
+            const msgs = document.getElementById('chatMessages');
+            const last = msgs.lastElementChild;
+            if (last && last.querySelector('button[onclick="retryLastMessage()"]')) last.remove();
+            // Re-send
+            addMessage(_lastChatMsg, 'user');
+            sendChatMessageText(_lastChatMsg);
+        }
+
+        function toggleChat() {
+            const chat = document.getElementById('chatWindow');
+            chat.classList.toggle('hidden');
+            if (!chat.classList.contains('hidden')) {
+                setTimeout(() => document.getElementById('chatInput').focus(), 100);
+            }
+        }
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            _lastChatMsg = msg;
+            addMessage(msg, 'user');
+            input.value = '';
+            await sendChatMessageText(msg);
+        }
+
+        async function sendChatMessageText(msg) {
+            // Add Typing Indicator
+            const typingId = addMessage('Escribiendo...', 'bot', true);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await response.json();
+
+                // Remove typing
+                const typingElem = document.getElementById(typingId);
+                if (typingElem) typingElem.remove();
+
+                // Add Bot Response
+                if (data.response) {
+                    addMessage(data.response, 'bot');
+                    // Auto-refresh calendar if a booking was just confirmed
+                    const appointmentKeywords = ['cita confirmada', 'cita agendada', 'reunión programada',
+                        'reunion programada', 'he agendado', 'he programado', 'quedamos el', 'programada para'];
+                    const lower = data.response.toLowerCase();
+                    if (appointmentKeywords.some(k => lower.includes(k)) && window._agendaCalendar) {
+                        setTimeout(() => window._agendaCalendar.refetchEvents(), 600);
+                    }
+                } else if (response.status === 401) {
+                    addMessage('Sesion expirada. Vuelve a iniciar sesion para continuar.', 'bot');
+                } else {
+                    addMessage('Error: ' + (data.error || 'Desconocido'), 'bot');
+                }
+
+            } catch (e) {
+                const typingElem = document.getElementById(typingId);
+                if (typingElem) typingElem.remove();
+                // Show error with retry button
+                const errDiv = document.createElement('div');
+                errDiv.className = 'flex justify-start animate-fade-in-up';
+                errDiv.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-sm max-w-[85%]">
+                    Error de conexion. <button onclick="retryLastMessage()" class="underline font-bold ml-1">Reintentar</button>
+                </div>`;
+                document.getElementById('chatMessages').appendChild(errDiv);
+                document.getElementById('chatMessages').scrollTop = 99999;
+                console.error(e);
+            }
+        }
+
+        function addMessage(text, role, isTyping = false) {
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`;
+
+            const id = 'msg-' + Date.now();
+            div.id = id;
+
+            const bubble = document.createElement('div');
+            bubble.className = role === 'user'
+                ? 'bg-indigo-600 text-white px-4 py-2 rounded-tl-2xl rounded-tr-xl rounded-bl-2xl shadow-sm text-sm max-w-[85%]'
+                : 'bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl shadow-sm text-sm max-w-[85%]';
+
+            if (isTyping) {
+                bubble.innerHTML = '<span class="flex gap-1 items-center py-0.5"><span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0ms"></span><span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:150ms"></span><span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay:300ms"></span></span>';
+                bubble.classList.add('text-slate-400');
+            } else {
+                // Escapar SIEMPRE antes de formatear: el texto puede venir del LLM
+                // (respuesta del asistente, potencialmente influida por contenido RAG
+                // no confiable) o directamente del propio usuario.
+                let formatted = escapeHtml(text).replace(/\n/g, '<br>');
+                // Simple link detection (sobre texto ya escapado)
+                formatted = formatted.replace(/(https?:\/\/[^\s&]+)/g, '<a href="$1" target="_blank" class="underline font-bold text-inherit">$1</a>');
+
+                bubble.innerHTML = formatted;
+            }
+
+            div.appendChild(bubble);
+            const container = document.getElementById('chatMessages');
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+    </script>
+    {% endif %}
+    <!-- Cookie / Privacy Banner -->
+    <div id="cookieBanner" class="fixed bottom-16 left-0 w-full z-[60] px-4 pb-2 hidden">
+        <div class="max-w-2xl mx-auto bg-slate-800 text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center justify-between gap-4 text-xs">
+            <p class="leading-relaxed text-slate-200">
+                Usamos cookies técnicas esenciales para el servicio. Procesamos datos con IA (OpenAI/GPT-4o).
+                <a href="{{ url_for('web.privacy_policy') }}" class="underline text-indigo-300 hover:text-white ml-1">Política de Privacidad</a>
+            </p>
+            <button onclick="acceptCookies()"
+                class="flex-shrink-0 bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-2 rounded-xl font-bold transition-all active:scale-95">
+                Aceptar
+            </button>
+        </div>
+    </div>
+    <script>
+        (function() {
+            if (!localStorage.getItem('cookie_ok')) {
+                document.getElementById('cookieBanner').classList.remove('hidden');
+            }
+        })();
+        function acceptCookies() {
+            localStorage.setItem('cookie_ok', '1');
+            document.getElementById('cookieBanner').classList.add('hidden');
+        }
+    </script>
+
+    <!-- PWA Install Banner (Hidden by default) -->
+    <div id="installBanner"
+        class="fixed bottom-0 left-0 w-full bg-indigo-900 text-white p-4 shadow-2xl z-[70] hidden safe-area-bottom animate-slide-up">
+        <div class="flex items-center justify-between max-w-lg mx-auto">
+            <div class="flex items-center gap-3">
+                <img src="{{ url_for('static', filename='logo_zeptai.png') }}"
+                    class="w-10 h-10 rounded-lg bg-white p-0.5">
+                <div>
+                    <h3 class="font-bold text-sm">Instalar Zeptai</h3>
+                    <p class="text-xs text-indigo-200">Acceso rápido y pantalla completa.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="dismissInstall()"
+                    class="text-indigo-300 hover:text-white px-2 py-1 text-sm font-medium">Ahora no</button>
+                <button onclick="triggerInstall()"
+                    class="bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg transition-transform active:scale-95">Instalar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const USER_LOGGED_IN = document.body.dataset.loggedIn === 'true';
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(async registration => {
+                        console.log('SW Registered: ', registration);
+                        if (USER_LOGGED_IN && Notification.permission === 'granted') {
+                            await subscribeToPush(registration);
+                        }
+                    })
+                    .catch(registrationError => {
+                        console.log('SW Registration Failed: ', registrationError);
+                    });
+            });
+        }
+
+        // URL-safe base64 decode for VAPID public key
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+        }
+
+        async function subscribeToPush(registration) {
+            if (!USER_LOGGED_IN) return;
+            try {
+                const existing = await registration.pushManager.getSubscription();
+                if (existing) return;
+
+                const keyRes = await fetch('/api/push/vapid-public-key');
+                const { publicKey } = await keyRes.json();
+                if (!publicKey) return;
+
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicKey)
+                });
+
+                await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscription)
+                });
+                console.log('📲 Push subscription saved.');
+            } catch (e) {
+                console.warn('Push subscription failed:', e);
+            }
+        }
+
+        window.requestPushPermission = async function() {
+            if (!USER_LOGGED_IN) return;
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                window.showToast('Tu navegador no soporta notificaciones push.', 'error');
+                return;
+            }
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const reg = await navigator.serviceWorker.ready;
+                await subscribeToPush(reg);
+                window.showToast('¡Notificaciones push activadas! 🔔', 'success');
+            } else {
+                window.showToast('Permiso de notificaciones denegado.', 'error');
+            }
+        };
+
+        // --- GLOBAL HAPTICS & TOUCH FEEDBACK ---
+        document.addEventListener('click', (e) => {
+            // Trigger vibration on any interactive element
+            if (e.target.closest('button, a, input[type="submit"], .clickable')) {
+                if (navigator.vibrate) {
+                    navigator.vibrate(10); // Light tap
+                }
+            }
+        });
+
+        // --- PWA INSTALLATION LOGIC ---
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // console.log('✅ Evento beforeinstallprompt capturado!');
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can install the PWA
+            checkInstallBanner();
+        });
+
+        function checkInstallBanner() {
+            const dismissed = localStorage.getItem('installDismissed');
+            // Show only if not dismissed and prompt event is captured, AND not in standalone mode
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+            // console.log('🔍 Checking Banner:', { dismissed, hasPrompt: !!deferredPrompt, isStandalone });
+
+            if (!dismissed && deferredPrompt && !isStandalone) {
+                // console.log('🚀 Showing Install Banner');
+                installBanner.classList.remove('hidden');
+            } else {
+                // console.log('🚫 Banner blocked by conditions.');
+            }
+        }
+
+        function dismissInstall() {
+            installBanner.classList.add('hidden');
+            // Hide for 7 days
+            const expiry = new Date().getTime() + (7 * 24 * 60 * 60 * 1000);
+            localStorage.setItem('installDismissed', expiry);
+        }
+
+        // Check expiry on load
+        window.addEventListener('load', () => {
+            // Debug: Force check (event might have fired before load)
+            if (deferredPrompt) checkInstallBanner();
+
+            const dismissed = localStorage.getItem('installDismissed');
+            if (dismissed && new Date().getTime() > parseInt(dismissed)) {
+                // console.log('⏰ Dismiss expired, resetting.');
+                localStorage.removeItem('installDismissed');
+            }
+        });
+
+        async function triggerInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+                installBanner.classList.add('hidden');
+            }
+        }
+
+        window.addEventListener('appinstalled', () => {
+            installBanner.classList.add('hidden');
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,13 @@
+{
+    "role": "Experto en Reparación, Mantenimiento y Talleres (SAT)",
+    "units": ["hora mano de obra", "pieza", "recambio", "litro (aceite/fluido)", "desplazamiento", "diagnóstico"],
+    "verbs": ["reparar", "sustituir", "diagnosticar", "revisar", "instalar"],
+    "common_items": [
+        "Cambio de aceite y filtros",
+        "Mano de obra mecánica",
+        "Sustitución pantalla",
+        "Desplazamiento técnico",
+        "Pieza de repuesto original"
+    ],
+    "structure_tips": "SEPARA CLARAMENTE: 'Materiales/Piezas' vs 'Mano de Obra'. Esto es crítico para talleres. Incluye matrícula o nº serie si aplica."
+}

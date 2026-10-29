@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Código de Conducta y Buenas Prácticas IA — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-10 max-w-2xl mx-auto w-full pb-24">
+
+    <header class="mb-8">
+        <a href="javascript:history.back()" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Volver</a>
+        <h1 class="text-3xl font-bold text-slate-800 mt-2">Código de Conducta y Buenas Prácticas IA</h1>
+        <p class="text-slate-500 text-sm mt-1">
+            Conforme al Reglamento (UE) 2024/1689 — EU AI Act, Art. 56 y Art. 95.
+            Última actualización: abril 2025.
+        </p>
+    </header>
+
+    <div class="bg-indigo-50 border border-indigo-100 rounded-2xl px-5 py-4 mb-8 text-sm text-indigo-800 leading-relaxed">
+        Zeptai es una plataforma que integra sistemas de Inteligencia Artificial para ayudar a pequeñas y medianas empresas
+        a digitalizar su gestión. Este documento recoge nuestro compromiso voluntario con el desarrollo y uso
+        responsable de la IA, de acuerdo con los principios éticos y la normativa europea vigente.
+    </div>
+
+    <!-- PARTE 1: Código de Buenas Prácticas -->
+    <section class="mb-10">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">I</div>
+            <h2 class="text-xl font-bold text-slate-800">Código de Buenas Prácticas en IA</h2>
+        </div>
+        <p class="text-xs text-slate-400 mb-5 ml-11">Art. 56 EU AI Act — aplicable a proveedores de sistemas de IA de uso general</p>
+
+        <div class="space-y-4 ml-11">
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">1. Transparencia en el uso de modelos externos</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Zeptai utiliza modelos de lenguaje de terceros (GPT-4o de OpenAI). Informamos explícitamente a los usuarios
+                    de qué proveedor procesa sus datos, bajo qué base legal (SCC) y con qué finalidad. No ocultamos
+                    la naturaleza de los modelos que sustentan el servicio.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">2. Minimización de datos enviados a la IA</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Solo se envían a los modelos de IA los datos estrictamente necesarios para generar la respuesta solicitada.
+                    No se incluyen datos sensibles no relevantes para la tarea (contraseñas, datos bancarios completos, etc.).
+                    Los prompts están diseñados para requerir el mínimo contexto posible.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">3. Supervisión humana de las decisiones</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Todas las recomendaciones generadas por agentes IA (análisis financiero, subvenciones, sinergias)
+                    son orientativas. El sistema no ejecuta acciones irreversibles de forma autónoma: el usuario
+                    siempre revisa y decide. Ninguna decisión vinculante se toma de forma exclusivamente automatizada.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">4. Trazabilidad y registro de llamadas a la IA</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Cada llamada a un modelo de IA queda registrada internamente (modelo usado, tokens consumidos,
+                    agente invocante, timestamp). Esto permite auditar el comportamiento del sistema, detectar
+                    anomalías y responder ante reclamaciones de usuarios.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">5. Evaluación continua de la calidad</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    El sistema incorpora un módulo de evaluación de respuestas (coherencia, relevancia, seguridad)
+                    para detectar degradaciones en la calidad de la IA. Las métricas de uso y precisión se monitorizan
+                    periódicamente para corregir comportamientos no deseados.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- PARTE 2: Código de Conducta -->
+    <section class="mb-10">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">II</div>
+            <h2 class="text-xl font-bold text-slate-800">Código de Conducta Ético en IA</h2>
+        </div>
+        <p class="text-xs text-slate-400 mb-5 ml-11">Art. 95 EU AI Act — compromiso voluntario para sistemas de riesgo mínimo</p>
+
+        <div class="space-y-4 ml-11">
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">1. No discriminación</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Los sistemas de IA de Zeptai no toman decisiones basadas en características protegidas (género,
+                    origen étnico, religión, orientación sexual, etc.). Los prompts están diseñados para evitar
+                    sesgos y las respuestas son revisables por el usuario en todo momento.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">2. Honestidad sobre las limitaciones de la IA</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    El sistema informa a los usuarios de que las respuestas son generadas por IA y pueden contener
+                    errores. Los agentes proactivos incluyen siempre la razón de su recomendación para que el usuario
+                    pueda valorar su fiabilidad. No presentamos las salidas de la IA como verdades absolutas.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">3. Privacidad por diseño</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    La arquitectura del sistema sigue el principio de <em>privacy by design</em> (Art. 25 RGPD):
+                    los datos de cada empresa están aislados por identificador de usuario, no se comparten entre
+                    cuentas y el acceso requiere autenticación. Los modelos de IA no retienen ni aprenden de
+                    los datos de los usuarios entre sesiones.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">4. Uso exclusivamente lícito</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Zeptai prohíbe el uso de su plataforma para generar contenido ilegal, engañoso o que vulnere
+                    derechos de terceros. Los prompts del sistema incluyen restricciones explícitas para evitar
+                    que la IA produzca contenido dañino, discriminatorio o contrario a la normativa vigente.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">5. Derecho a impugnar decisiones automatizadas</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Cualquier usuario puede solicitar explicación sobre las recomendaciones generadas por los agentes
+                    IA y puede ignorarlas, corregirlas o solicitar su eliminación. El canal de contacto para
+                    ejercer este derecho es <a href="mailto:privacidad@zeptai.com" class="text-indigo-600 underline">privacidad@zeptai.com</a>.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-2">6. Sostenibilidad y uso responsable de recursos</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    El sistema está diseñado para minimizar el número de llamadas a modelos de IA mediante caché
+                    de embeddings, RAG eficiente y umbrales de activación en agentes proactivos (solo notifican
+                    cuando superan un score mínimo de relevancia). Esto reduce el impacto ambiental asociado
+                    al uso intensivo de LLMs.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Nota -->
+    <div class="bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-xs text-slate-500 leading-relaxed">
+        <strong class="text-slate-700">Compromiso de revisión:</strong> Este código se revisará anualmente o ante cambios
+        normativos relevantes. Para sugerencias o incidencias relacionadas con el uso ético de la IA en Zeptai,
+        contacta en <a href="mailto:privacidad@zeptai.com" class="text-indigo-600 underline">privacidad@zeptai.com</a>.
+    </div>
+
+</div>
+{% endblock %}

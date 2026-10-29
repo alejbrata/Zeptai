@@ -1,0 +1,190 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# REQUISITO: crea un fichero .env en la raiz del repo con tus claves antes de
+# ejecutar docker-compose up. Ejemplo:
+#
+#   OPENAI_API_KEY=sk-...
+#   TWILIO_ACCOUNT_SID=AC...
+#   TWILIO_AUTH_TOKEN=...
+#   TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
+#   SECRET_KEY=cambia_esto_por_algo_aleatorio_largo
+#   MAIL_SERVER=smtp.gmail.com
+#   MAIL_PORT=587
+#   MAIL_USE_TLS=True
+#   MAIL_USERNAME=tu@gmail.com
+#   MAIL_PASSWORD=tu_app_password
+#   MAIL_DEFAULT_SENDER=tu@gmail.com
+#
+# MCP_AUTH_TOKEN (obligatoria) es el secreto compartido entre web y mcp.
+#
+# Las variables DATABASE_URL, MCP_URL y PORT se inyectan directamente
+# en cada servicio y sobreescriben cualquier valor del .env.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Base de datos PostgreSQL ──────────────────────────────────────────────
+  db:
+    image: pgvector/pgvector:pg15
+    container_name: zeptai_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: zeptai_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Solo en la maquina local: no exponer PostgreSQL a la red
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    # Healthcheck: los servicios que dependen de 'db' esperan hasta que
+    # Postgres acepte conexiones (evita el race condition tipico de arranque).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zeptai_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── Servidor MCP (Streamable HTTP + token) ──────────────────────────────────────────────────────
+  # Proceso persistente que expone las herramientas del LLM via SSE.
+  # Arranca ANTES que la app web para que el cliente MCP pueda conectarse.
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zeptai_mcp
+    # Sobreescribe el CMD del Dockerfile para lanzar el servidor SSE
+    command: python mcp_server_sse.py
+    ports:
+      # Solo en la maquina local (para conectar un cliente MCP en la demo).
+      # La app web lo usa por la red interna con MCP_AUTH_TOKEN.
+      - "127.0.0.1:8001:8001"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/zeptai_db
+      - MCP_SSE_PORT=8001
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+    volumes:
+      # Hot-reload del codigo en desarrollo: cambios en ZEPTAI_PRO se
+      # reflejan sin rebuild de la imagen.
+      - ./TICKETIA_PRO:/app/TICKETIA_PRO
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Aplicacion Flask principal ────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zeptai_app
+    ports:
+      - "5000:5000"
+    # env_file inyecta OPENAI_API_KEY, TWILIO_*, MAIL_*, SECRET_KEY, etc.
+    # como variables de entorno en el contenedor. Esto es equivalente a
+    # pasar cada variable con -e, pero de forma centralizada.
+    # IMPORTANTE: load_dotenv() en el codigo es un no-op cuando las vars
+    # ya estan en el entorno (docker no las sobreescribe).
+    env_file:
+      - .env
+    environment:
+      - PORT=5000
+      - DATABASE_URL=postgresql://postgres:password@db:5432/zeptai_db
+      - MCP_URL=http://mcp:8001/mcp
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - GRAFANA_URL=http://localhost:3000
+      - JAEGER_URL=http://localhost:16686
+      - PROMETHEUS_URL=http://localhost:9090
+      # Cuenta con acceso al panel admin y a /observabilidad. Coincide con la que
+      # crea seed_all.py para que el entorno de demo sea navegable al completo.
+      - ADMIN_EMAIL=admin@demo.com
+    volumes:
+      - ./TICKETIA_PRO:/app/TICKETIA_PRO
+      # Persistir uploads y documentos generados fuera del contenedor
+      - uploads_data:/app/TICKETIA_PRO/static/uploads
+      - generated_docs:/app/TICKETIA_PRO/static/generated_docs
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mcp:
+        condition: service_started
+
+  # ── Scheduler proactivo ───────────────────────────────────────────────────
+  # Proceso independiente que ejecuta los agentes proactivos diariamente.
+  # Se beneficia de APScheduler con jobstore SQL para persistir entre reinicios.
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zeptai_scheduler
+    # run_scheduler.py esta en /app/ (raiz), no en /app/ZEPTAI_PRO.
+    # Se usa ruta absoluta para evitar errores de CWD.
+    command: python /app/run_scheduler.py
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/zeptai_db
+    volumes:
+      - ./TICKETIA_PRO:/app/TICKETIA_PRO
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  # ── Jaeger — trazas distribuidas (OpenTelemetry) ─────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: zeptai_jaeger
+    ports:
+      - "127.0.0.1:16686:16686"   # UI de Jaeger
+      - "127.0.0.1:4318:4318"     # OTLP HTTP (receptor de trazas)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+
+  # ── Prometheus — scraping de métricas ────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: zeptai_prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_started
+
+  # ── Grafana — dashboards de observabilidad ────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.3
+    container_name: zeptai_grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=zeptai
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+volumes:
+  pgdata:
+  uploads_data:
+  generated_docs:
+  grafana_data:

@@ -1,0 +1,92 @@
+name: MLOps Cycle
+
+on:
+  push:
+    branches: [ "dev", "main", "feature/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-evaluate:
+    runs-on: ubuntu-latest
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY || 'ci-secret-key-not-for-prod' }}
+      FLASK_ENV: testing
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        working-directory: ./TICKETIA_PRO
+        run: |
+          python -m pytest tests/ -v --tb=short \
+            --ignore=tests/test_deepeval_rag.py \
+            --ignore=tests/test_observability.py \
+            --continue-on-collection-errors
+
+      - name: Run gold-standard evaluations (sin API)
+        working-directory: ./TICKETIA_PRO
+        run: python mlops/eval_agents.py
+
+  rag-evaluation:
+    # Evaluacion de calidad RAG con DeepEval contra una BD real con pgvector.
+    # Solo en main y si existe el secreto: cada ejecucion cuesta dinero de API.
+    needs: test-and-evaluate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: zeptai_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d zeptai_db"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SECRET_KEY: ci-secret-key-not-for-prod
+      FLASK_ENV: testing
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/zeptai_db
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Seed demo user and index knowledge base
+        if: env.OPENAI_API_KEY != ''
+        working-directory: ./TICKETIA_PRO
+        run: |
+          python seed_all.py
+          python -c "from app import app; from modules.services.embeddings import ingest_document; ctx = app.app_context(); ctx.push(); n = ingest_document('+34600000001', '../demo_business_knowledge.pdf', 'demo_business_knowledge.pdf'); print(f'{n} chunks'); assert n > 0"
+
+      - name: Run RAG quality evaluations
+        if: env.OPENAI_API_KEY != ''
+        working-directory: ./TICKETIA_PRO
+        run: python mlops/eval_rag.py

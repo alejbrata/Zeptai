@@ -1,0 +1,13 @@
+{
+    "role": "Experto en Servicios Profesionales, Salud y Consultoría",
+    "units": ["hora", "sesión", "tratamiento", "consulta", "igualas", "informe", "proyecto"],
+    "verbs": ["asesorar", "tratar", "diagnosticar", "redactar", "gestionar", "diseñar"],
+    "common_items": [
+        "Consulta general",
+        "Tratamiento dental",
+        "Sesión fisioterapia",
+        "Gestión fiscal trimestral",
+        "Diseño logotipo"
+    ],
+    "structure_tips": "Lenguaje formal. Describe el alcance del servicio o tratamiento. Agrupa por fases o paciente/cliente si aplica."
+}

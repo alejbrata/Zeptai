@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Observabilidad — Zeptai Admin{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-full" style="height: calc(100vh - 60px);">
+
+    <!-- Header compacto -->
+    <div class="flex-shrink-0 px-5 pt-4 pb-3 bg-white border-b border-slate-100">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('web.dashboard') }}" class="text-slate-400 hover:text-slate-600 transition-colors text-sm">←</a>
+                <div>
+                    <h1 class="font-bold text-slate-800 text-base leading-tight">Observabilidad</h1>
+                    <p class="text-slate-400 text-xs">OpenTelemetry · Prometheus · Grafana · Jaeger</p>
+                </div>
+            </div>
+
+            <!-- Status pills -->
+            <div class="flex items-center gap-2" id="status-bar">
+                <span class="status-pill text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-400" data-service="grafana" data-url="{{ grafana_url }}/api/health">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-300 mr-1 align-middle"></span>Grafana
+                </span>
+                <span class="status-pill text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-400" data-service="prometheus" data-url="http://localhost:9090/-/healthy">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-300 mr-1 align-middle"></span>Prometheus
+                </span>
+                <span class="status-pill text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-400" data-service="jaeger" data-url="{{ jaeger_url }}">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-300 mr-1 align-middle"></span>Jaeger
+                </span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 mt-3">
+            <button onclick="showTab('grafana')" id="tab-grafana"
+                class="tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors bg-indigo-600 text-white">
+                📊 Grafana
+            </button>
+            <button onclick="showTab('jaeger')" id="tab-jaeger"
+                class="tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors text-slate-500 hover:bg-slate-100">
+                🔍 Jaeger
+            </button>
+            <button onclick="showTab('prometheus')" id="tab-prometheus"
+                class="tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors text-slate-500 hover:bg-slate-100">
+                🔥 Prometheus
+            </button>
+
+            <!-- Spacer + external links -->
+            <div class="ml-auto flex items-center gap-2">
+                <a id="external-link" href="{{ grafana_url }}/d/zeptai-llm" target="_blank" rel="noopener"
+                   class="text-xs text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                    Abrir en nueva pestaña ↗
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Iframes container -->
+    <div class="flex-1 relative overflow-hidden bg-slate-900">
+
+        <!-- Grafana -->
+        <div id="panel-grafana" class="obs-panel absolute inset-0">
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500 pointer-events-none z-0">
+                <div class="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center text-2xl">📊</div>
+                <p class="text-sm font-medium">Cargando Grafana…</p>
+                <p class="text-xs text-slate-600">Si no carga, comprueba que docker-compose está corriendo</p>
+            </div>
+            <iframe id="iframe-grafana"
+                src="{{ grafana_url }}/d/zeptai-llm/zeptai-llm-observabilidad?orgId=1&theme=dark&kiosk"
+                class="absolute inset-0 w-full h-full z-10"
+                style="border:none;"
+                title="Grafana LLM Dashboard">
+            </iframe>
+        </div>
+
+        <!-- Jaeger -->
+        <div id="panel-jaeger" class="obs-panel absolute inset-0 hidden">
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500 pointer-events-none z-0">
+                <div class="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center text-2xl">🔍</div>
+                <p class="text-sm font-medium">Cargando Jaeger…</p>
+            </div>
+            <iframe id="iframe-jaeger"
+                src="{{ jaeger_url }}"
+                class="absolute inset-0 w-full h-full z-10"
+                style="border:none;"
+                title="Jaeger Distributed Tracing">
+            </iframe>
+        </div>
+
+        <!-- Prometheus -->
+        <div id="panel-prometheus" class="obs-panel absolute inset-0 hidden">
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500 pointer-events-none z-0">
+                <div class="w-10 h-10 rounded-xl bg-orange-400/20 flex items-center justify-center text-2xl">🔥</div>
+                <p class="text-sm font-medium">Cargando Prometheus…</p>
+            </div>
+            <iframe id="iframe-prometheus"
+                src="{{ prometheus_url }}/graph"
+                class="absolute inset-0 w-full h-full z-10"
+                style="border:none;"
+                title="Prometheus">
+            </iframe>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const TABS = {
+    grafana:    { panel: 'panel-grafana',    iframe: 'iframe-grafana',    ext: '{{ grafana_url }}/d/zeptai-llm' },
+    jaeger:     { panel: 'panel-jaeger',     iframe: 'iframe-jaeger',     ext: '{{ jaeger_url }}' },
+    prometheus: { panel: 'panel-prometheus', iframe: 'iframe-prometheus', ext: '{{ prometheus_url }}/graph' },
+};
+
+function showTab(name) {
+    Object.keys(TABS).forEach(t => {
+        const panel = document.getElementById(TABS[t].panel);
+        const btn   = document.getElementById('tab-' + t);
+        const active = t === name;
+        panel.classList.toggle('hidden', !active);
+        btn.classList.toggle('bg-indigo-600', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-slate-500', !active);
+        btn.classList.toggle('hover:bg-slate-100', !active);
+    });
+    document.getElementById('external-link').href = TABS[name].ext;
+    document.getElementById('external-link').setAttribute('data-tab', name);
+}
+
+// Status checks — hacemos fetch desde el propio cliente al servicio
+async function checkStatus(pill) {
+    const url = pill.dataset.url;
+    const dot  = pill.querySelector('span');
+    try {
+        const res = await fetch(url, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(3000) });
+        // no-cors → siempre opaque si el servidor responde algo; si lanza = offline
+        pill.classList.replace('bg-slate-100', 'bg-emerald-50');
+        pill.classList.replace('text-slate-400', 'text-emerald-700');
+        dot.classList.replace('bg-slate-300', 'bg-emerald-500');
+    } catch {
+        pill.classList.replace('bg-slate-100', 'bg-red-50');
+        pill.classList.replace('text-slate-400', 'text-red-500');
+        dot.classList.replace('bg-slate-300', 'bg-red-400');
+    }
+}
+
+document.querySelectorAll('.status-pill').forEach(p => checkStatus(p));
+setInterval(() => document.querySelectorAll('.status-pill').forEach(p => checkStatus(p)), 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets & credentials
+client_secrets.json
+ticketia-bot-*.json
+token.json
+*-service-account.json
+*-credentials.json
+credentials.json
+
+# Database
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated media and user uploads (not source code)
+TICKETIA_PRO/static/generated_docs/
+TICKETIA_PRO/static/uploads/
+
+# Delivery zips
+*.zip
+
+# Test environment clone
+test_docker/
+
+# Claude Code (config local, comandos, worktrees — herramienta de desarrollo, no parte del proyecto)
+.claude/
+
+# DeepEval cache (generado localmente por las evaluaciones)
+**/.deepeval/
+.deepeval/
+
+# Misc
+tatus
+
+# Demo assets (generated locally, not tracked)
+demo_business_knowledge.pdf
+
+# Documentos personales TFM (solo local, excepto memoria final)
+*.docx
+!Zeptai_Memoria_TFM.docx
+ARCHITECTURE_DEFENSE.md
+PROPUESTA_TFM_TICKETIA.md
+preguntas_tribunal_tfm.md
+TEST_GUIDE.md
+TEST_REPORT.md
+
+# Scripts de generacion de documentacion personal
+generar_*.py
+generate_*.py
+zip_delivery.py
+
+# Scripts de debug temporal
+check_db.py
+debug_db.py

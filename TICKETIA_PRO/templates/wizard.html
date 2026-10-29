@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Configurar IA — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 max-w-lg mx-auto w-full">
+
+    <a href="{{ url_for('web.dashboard') }}"
+        class="inline-flex items-center text-sm font-medium text-slate-400 hover:text-indigo-600 transition-colors mb-6">
+        ← Volver al inicio
+    </a>
+
+    <header class="mb-8">
+        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+            🧠 Entrena a tu Asistente
+        </h1>
+        <p class="text-slate-500 text-sm mt-1">Define cómo debe comportarse tu IA.</p>
+
+        <!-- Indicador de progreso -->
+        <div class="mt-5 flex items-center gap-2" aria-label="Progreso de configuración">
+            {% set steps = [('1','Identidad','✓'), ('2','Negocio','✓'), ('3','Atención','✓'), ('4','Guardar','→')] %}
+            {% for num, label, icon in steps %}
+            <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
+                    {% if loop.index < 4 %}bg-indigo-600 text-white{% else %}bg-indigo-100 text-indigo-600{% endif %}">
+                    {{ num }}
+                </div>
+                <span class="text-[10px] font-medium text-slate-400 text-center leading-tight">{{ label }}</span>
+            </div>
+            {% if not loop.last %}
+            <div class="flex-none w-6 h-px bg-slate-200 mb-4"></div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </header>
+
+    <form action="{{ url_for('web.save_config') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+
+        <!-- Nombre -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre Comercial</label>
+            <div class="relative">
+                <input type="text" name="business_name" id="wiz-name" value="{{ current_user.business_name }}"
+                    placeholder="Ej: Clinica Dental Sonrisas" required
+                    class="w-full px-0 pr-6 py-2 bg-transparent border-b border-slate-200 focus:border-indigo-500 outline-none transition-colors text-slate-800 font-medium placeholder-slate-300"
+                    oninput="wv(this, /^.{2,}$/, '')">
+                <span id="wiz-name-ok" class="absolute right-0 top-2 text-emerald-500 text-sm hidden">✓</span>
+            </div>
+            <p id="wiz-name-err" class="text-xs text-red-500 mt-1 hidden">Minimo 2 caracteres</p>
+
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mt-4 mb-2">Logo de la Empresa
+                (Opcional)</label>
+            <input type="file" name="logo_file" accept="image/*"
+                class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all">
+            {% if current_user.logo_path %}
+            <p class="text-xs text-green-600 mt-2">✅ Logo actual cargado</p>
+            {% endif %}
+        </div>
+
+        <!-- Datos Fiscales -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">NIF / CIF Fiscal</label>
+                <input type="text" name="nif"
+                    value="{{ current_user.static_knowledge.get('nif','') if current_user.static_knowledge else '' }}"
+                    placeholder="Ej: B12345678"
+                    class="w-full px-0 py-2 bg-transparent border-b border-slate-200 focus:border-indigo-500 outline-none transition-colors text-slate-800 font-medium placeholder-slate-300">
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Dirección Fiscal</label>
+                <input type="text" name="address"
+                    value="{{ current_user.static_knowledge.get('address','') if current_user.static_knowledge else '' }}"
+                    placeholder="Ej: Calle Mayor 1, 28001 Madrid"
+                    class="w-full px-0 py-2 bg-transparent border-b border-slate-200 focus:border-indigo-500 outline-none transition-colors text-slate-800 font-medium placeholder-slate-300">
+            </div>
+        </div>
+
+        <!-- Sector & Tone -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sector</label>
+                <select name="sector" class="w-full bg-transparent outline-none text-slate-800 font-medium text-sm">
+                    {% set sel = current_user.static_knowledge.get('sector', '') %}
+                    <option value="Tecnología"      {% if sel=='Tecnología'      %}selected{% endif %}>💻 Tecnología</option>
+                    <option value="Restauración"    {% if sel=='Restauración'    %}selected{% endif %}>🍔 Restauración</option>
+                    <option value="Salud / Clínica" {% if sel=='Salud / Clínica' %}selected{% endif %}>🏥 Salud</option>
+                    <option value="Comercio"        {% if sel=='Comercio'        %}selected{% endif %}>🛍️ Comercio</option>
+                    <option value="Servicios"       {% if sel=='Servicios'       %}selected{% endif %}>💼 Servicios</option>
+                    <option value="Marketing"       {% if sel=='Marketing'       %}selected{% endif %}>📣 Marketing</option>
+                    <option value="Construcción"    {% if sel=='Construcción'    %}selected{% endif %}>🏗️ Construcción</option>
+                    <option value="Educación"       {% if sel=='Educación'       %}selected{% endif %}>📚 Educación</option>
+                    <option value="Otro"            {% if sel=='Otro'            %}selected{% endif %}>🏢 Otro</option>
+                </select>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tono</label>
+                <select name="tone" class="w-full bg-transparent outline-none text-slate-800 font-medium text-sm">
+                    <option value="Profesional" {% if current_user.static_knowledge.get('tone')=='Profesional'
+                        %}selected{% endif %}>👔 Serio</option>
+                    <option value="Cercano y Amable" {% if current_user.static_knowledge.get('tone')=='Cercano y Amable'
+                        %}selected{% endif %}>🤝 Amable</option>
+                    <option value="Entusiasta" {% if current_user.static_knowledge.get('tone')=='Entusiasta'
+                        %}selected{% endif %}>⚡ Energético</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Knowledge Base -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                📚 Conocimiento Base
+            </h3>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Horario de Atención</label>
+                <input type="text" name="schedule" value="{{ current_user.static_knowledge.get('schedule', '') }}"
+                    placeholder="L-V: 9:00 - 20:00"
+                    class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100 transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Servicios Principales</label>
+                <div class="relative">
+                    <input type="text" name="services" id="wiz-services" value="{{ current_user.static_knowledge.get('services', '') }}"
+                        placeholder="Ej: Menu del dia, Cafes, Desayunos"
+                        class="w-full px-3 py-2 pr-8 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100 transition-colors"
+                        oninput="wv(this, /^.{5,}$/, '')">
+                    <span id="wiz-services-ok" class="absolute right-2.5 top-2 text-emerald-500 text-sm hidden">✓</span>
+                </div>
+                <p id="wiz-services-err" class="text-xs text-red-500 mt-1 hidden">Describe al menos tus servicios principales</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Métodos de Pago</label>
+                <input type="text" name="payment_methods"
+                    value="{{ current_user.static_knowledge.get('payment_methods', '') }}"
+                    placeholder="Efectivo, Tarjeta, Bizum"
+                    class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Instrucciones Específicas del
+                    Negocio</label>
+                <textarea name="business_instructions" rows="4"
+                    placeholder="Ej: No aceptamos reservas en terraza por teléfono, la cocina cierra 30 min antes del cierre, somos Pet Friendly solo en la zona de barra..."
+                    class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100">{{ current_user.static_knowledge.get('instructions', '') }}</textarea>
+            </div>
+        </div>
+
+        <!-- Atención al Cliente y Postventa -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                🎧 Atención al Cliente y Postventa
+            </h3>
+            <p class="text-xs text-slate-400 -mt-2">Tu IA usará esta información para gestionar dudas, devoluciones y reclamaciones automáticamente.</p>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Preguntas Frecuentes (FAQ)</label>
+                <textarea name="faq" rows="3"
+                    placeholder="Ej: ¿Hacéis envíos? Sí, en 24-48h. ¿Aceptáis cambios? Sí en 30 días con ticket..."
+                    class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100">{{ current_user.static_knowledge.get('faq', '') }}</textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Política de Devoluciones</label>
+                <textarea name="return_policy" rows="2"
+                    placeholder="Ej: Aceptamos devoluciones en 30 días. El producto debe estar sin usar y con etiqueta..."
+                    class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100">{{ current_user.static_knowledge.get('return_policy', '') }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Tiempo de Entrega / Respuesta</label>
+                    <input type="text" name="delivery_time"
+                        value="{{ current_user.static_knowledge.get('delivery_time', '') }}"
+                        placeholder="Ej: 24-48h laborables"
+                        class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Garantía</label>
+                    <input type="text" name="warranty_info"
+                        value="{{ current_user.static_knowledge.get('warranty_info', '') }}"
+                        placeholder="Ej: 2 años por ley, 1 año piezas"
+                        class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Contacto de Soporte</label>
+                <input type="text" name="support_contact"
+                    value="{{ current_user.static_knowledge.get('support_contact', '') }}"
+                    placeholder="Ej: soporte@miempresa.com · 900 123 456 (L-V 9-18h)"
+                    class="w-full px-3 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500 border border-slate-100">
+            </div>
+        </div>
+
+        <button type="submit" id="wiz-submit"
+            class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-[0.98]">
+            Guardar y Activar IA
+        </button>
+    </form>
+</div>
+
+<script>
+    function wv(input, regex, errMsg) {
+        const errEl = document.getElementById(input.id + '-err');
+        const okEl  = document.getElementById(input.id + '-ok');
+        const valid = input.value.trim() === '' || regex.test(input.value.trim());
+        if (input.value.trim() === '') {
+            input.classList.remove('border-red-300', 'border-emerald-300', 'ring-1', 'ring-red-300', 'ring-emerald-300');
+            if (errEl) errEl.classList.add('hidden');
+            if (okEl)  okEl.classList.add('hidden');
+        } else if (valid) {
+            input.classList.add('border-emerald-300'); input.classList.remove('border-red-300');
+            if (errEl) errEl.classList.add('hidden');
+            if (okEl)  okEl.classList.remove('hidden');
+        } else {
+            input.classList.add('border-red-300'); input.classList.remove('border-emerald-300');
+            if (errEl) errEl.classList.remove('hidden');
+            if (okEl)  okEl.classList.add('hidden');
+        }
+    }
+
+    // Show save feedback
+    document.getElementById('wiz-submit').closest('form').addEventListener('submit', function(e) {
+        const btn = document.getElementById('wiz-submit');
+        btn.textContent = 'Guardando...';
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

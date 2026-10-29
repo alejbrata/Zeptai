@@ -1,0 +1,13 @@
+{
+    "role": "Experto en Hostelería, Restauración y Eventos (HORECA)",
+    "units": ["pax (persona)", "cubierto", "menú", "noche", "habitación", "botella", "copa", "ración", "evento"],
+    "verbs": ["servir", "preparar", "alojar", "organizar", "suministrar"],
+    "common_items": [
+        "Menú del día",
+        "Alojamiento habitación doble",
+        "Servicio de catering boda",
+        "Café con leche",
+        "Alquiler de sala"
+    ],
+    "structure_tips": "Si es restaurante, lista simple. Si es evento/hotel, agrupa por 'Alojamiento', 'Restauración', 'Extras'. Desglosa IVA (10% habitualmente en ES)."
+}

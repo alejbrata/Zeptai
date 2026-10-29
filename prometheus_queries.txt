@@ -1,0 +1,143 @@
+================================================================
+  ZEPTAI — CONSULTAS PROMQL ÚTILES
+  Pegar en Prometheus > Graph > Expression y pulsar Execute
+  Activar "Use local time" para ver datos actuales
+================================================================
+
+
+── LLAMADAS LLM ─────────────────────────────────────────────
+
+Todas las llamadas (total acumulado por modelo y stage)
+  zeptai_llm_requests_total
+
+Total de llamadas (suma global)
+  sum(zeptai_llm_requests_total)
+
+Llamadas por modelo (agrupado)
+  sum by (model) (zeptai_llm_requests_total)
+
+Llamadas por stage/funcionalidad
+  sum by (stage) (zeptai_llm_requests_total)
+
+Tasa de llamadas por minuto (últimos 5 min)
+  sum by (model) (rate(zeptai_llm_requests_total[5m])) * 60
+
+Llamadas fallidas
+  sum(zeptai_llm_requests_total{success="false"})
+
+Tasa de éxito en %
+  sum(zeptai_llm_requests_total{success="true"})
+  / sum(zeptai_llm_requests_total) * 100
+
+
+── TOKENS ───────────────────────────────────────────────────
+
+Tokens totales consumidos
+  sum(zeptai_llm_tokens_total)
+
+Tokens por modelo
+  sum by (model) (zeptai_llm_tokens_total)
+
+Tokens de entrada vs salida
+  sum by (token_type) (zeptai_llm_tokens_total)
+
+Tasa de tokens por minuto (últimos 5 min)
+  sum(rate(zeptai_llm_tokens_total[5m])) * 60
+
+
+── COSTE ────────────────────────────────────────────────────
+
+Coste total acumulado (USD)
+  sum(zeptai_llm_cost_usd_total)
+
+Coste por modelo
+  sum by (model) (zeptai_llm_cost_usd_total)
+
+Coste por stage/funcionalidad
+  sum by (stage) (zeptai_llm_cost_usd_total)
+
+Coste por minuto (últimos 5 min)
+  sum(rate(zeptai_llm_cost_usd_total[5m])) * 60
+
+
+── LATENCIA ─────────────────────────────────────────────────
+
+Latencia mediana p50 global (segundos)
+  histogram_quantile(0.50,
+    sum by (le) (rate(zeptai_llm_latency_seconds_bucket[5m]))
+  )
+
+Latencia p95 global
+  histogram_quantile(0.95,
+    sum by (le) (rate(zeptai_llm_latency_seconds_bucket[5m]))
+  )
+
+Latencia p50 desglosada por stage
+  histogram_quantile(0.50,
+    sum by (stage, le) (rate(zeptai_llm_latency_seconds_bucket[5m]))
+  )
+
+Latencia p95 por stage
+  histogram_quantile(0.95,
+    sum by (stage, le) (rate(zeptai_llm_latency_seconds_bucket[5m]))
+  )
+
+Latencia media por modelo
+  sum by (model) (rate(zeptai_llm_latency_seconds_sum[5m]))
+  / sum by (model) (rate(zeptai_llm_latency_seconds_count[5m]))
+
+
+── CALIDAD RAG (DeepEval) ───────────────────────────────────
+
+Todas las puntuaciones RAG
+  zeptai_rag_score
+
+Faithfulness (respuesta anclada en contexto)
+  zeptai_rag_score{metric="faithfulness"}
+
+Answer Relevancy (respuesta relevante para la pregunta)
+  zeptai_rag_score{metric="answer_relevancy"}
+
+Contextual Precision (chunks recuperados precisos)
+  zeptai_rag_score{metric="contextual_precision"}
+
+Contextual Recall (chunks contienen la info necesaria)
+  zeptai_rag_score{metric="contextual_recall"}
+
+
+── SISTEMA ──────────────────────────────────────────────────
+
+Info de la aplicación (versión, entorno)
+  zeptai_app_info
+
+Estado del scraping (1 = OK, 0 = fallo)
+  up{job="zeptai"}
+
+Tiempo desde el último scrape exitoso (segundos)
+  time() - scrape_success_timestamp{job="zeptai"}
+
+
+── COMPARATIVAS ÚTILES PARA EL TFM ─────────────────────────
+
+¿Qué stage consume más tokens?
+  topk(5, sum by (stage) (zeptai_llm_tokens_total))
+
+¿Qué modelo es más caro?
+  topk(3, sum by (model) (zeptai_llm_cost_usd_total))
+
+¿Qué stage tarda más (p95)?
+  topk(5,
+    histogram_quantile(0.95,
+      sum by (stage, le) (rate(zeptai_llm_latency_seconds_bucket[5m]))
+    )
+  )
+
+Ratio coste/llamada por modelo (USD medio por llamada)
+  sum by (model) (zeptai_llm_cost_usd_total)
+  / sum by (model) (zeptai_llm_requests_total)
+
+================================================================
+  NOTA: las métricas de latencia y rate solo tienen sentido
+  con ventanas de tiempo [5m], [15m], [1h].
+  Con pocas llamadas usar [1h] para ver algo en Graph.
+================================================================

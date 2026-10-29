@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Base de Conocimiento — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 pb-24 max-w-2xl mx-auto w-full">
+
+    <header class="mb-8">
+        <a href="{{ url_for('web.dashboard') }}" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Inicio</a>
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight mt-2">📚 Base de Conocimiento</h1>
+        <p class="text-slate-500 mt-1 font-medium">Documentos internos que tu IA usa para responder con precisión</p>
+    </header>
+
+    <!-- Hero explicativo -->
+    <div class="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[2rem] p-7 mb-8 text-white relative overflow-hidden">
+        <div class="relative z-10">
+            <p class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-2">RAG · pgvector</p>
+            <h2 class="text-xl font-bold mb-2">Tu IA aprende de tus documentos</h2>
+            <p class="text-indigo-100 text-sm leading-relaxed mb-4">
+                Sube catálogos, tarifas, manuales o contratos en PDF y el asistente los
+                consultará automáticamente al responder preguntas de clientes o al generar presupuestos.
+            </p>
+            <ul class="space-y-1.5 text-sm text-indigo-100">
+                <li class="flex items-center gap-2"><span class="text-white font-bold">✓</span> PDF, TXT y Markdown hasta 20 MB</li>
+                <li class="flex items-center gap-2"><span class="text-white font-bold">✓</span> Búsqueda semántica por similitud coseno</li>
+                <li class="flex items-center gap-2"><span class="text-white font-bold">✓</span> Se combina con el wizard de configuración</li>
+            </ul>
+        </div>
+        <div class="absolute -bottom-8 -right-8 w-36 h-36 bg-violet-500 rounded-full blur-3xl opacity-40"></div>
+    </div>
+
+    <!-- Zona de subida -->
+    <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 mb-6">
+        <h3 class="font-bold text-slate-800 mb-4">Subir documento</h3>
+
+        <div id="dropZone"
+            class="border-2 border-dashed border-slate-200 rounded-2xl p-6 md:p-10 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 transition-all group"
+            onclick="document.getElementById('fileInput').click()"
+            ondragover="event.preventDefault(); this.classList.add('border-indigo-400','bg-indigo-50/40')"
+            ondragleave="this.classList.remove('border-indigo-400','bg-indigo-50/40')"
+            ondrop="handleDrop(event)">
+            <div class="text-5xl mb-3 group-hover:scale-110 transition-transform select-none">📄</div>
+            <p class="font-bold text-slate-600 mb-1">Arrastra aquí o toca para elegir</p>
+            <p class="text-xs text-slate-400">PDF · TXT · MD · máx. 20 MB</p>
+            <input type="file" id="fileInput" class="hidden" accept=".pdf,.txt,.md" onchange="handleFileSelected(this)">
+        </div>
+
+        <!-- Preview del fichero seleccionado -->
+        <div id="previewSection" class="hidden mt-5">
+            <div class="flex items-center gap-4 bg-slate-50 rounded-2xl p-4">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📄</div>
+                <div class="flex-1 min-w-0">
+                    <p id="previewName" class="font-bold text-slate-700 text-sm truncate"></p>
+                    <p id="previewSize" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button onclick="resetUpload()" class="text-slate-300 hover:text-red-400 transition-colors text-xl p-1">✕</button>
+            </div>
+            <button id="uploadBtn" onclick="uploadDocument()"
+                class="mt-4 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95 text-base">
+                📤 Procesar e indexar
+            </button>
+        </div>
+
+        <!-- Estado procesando -->
+        <div id="processingState" class="hidden mt-5 bg-indigo-50 rounded-2xl p-5 text-center">
+            <div class="flex justify-center mb-3">
+                <span class="flex gap-1.5 items-center">
+                    <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+                    <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+                    <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+                </span>
+            </div>
+            <p class="font-bold text-indigo-800 text-sm mb-1">Generando embeddings...</p>
+            <p class="text-indigo-600 text-xs">Recibirás una notificación cuando esté listo. Puedes seguir usando la app.</p>
+        </div>
+    </div>
+
+    <!-- Lista de documentos -->
+    <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-bold text-slate-800">Documentos indexados</h3>
+            <span id="chunkCount" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                {{ documents | sum(attribute='chunks') }} fragmentos
+            </span>
+        </div>
+
+        <div id="docList" class="space-y-3">
+            {% if documents %}
+                {% for doc in documents %}
+                <div class="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 transition-colors" id="doc-{{ loop.index }}">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0
+                        {% if doc.type == 'wizard' %}bg-emerald-50{% else %}bg-indigo-50{% endif %}">
+                        {% if doc.type == 'wizard' %}⚙️{% else %}📄{% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-slate-700 text-sm truncate">{{ doc.name }}</p>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            {{ doc.chunks }} fragmentos ·
+                            <span class="{% if doc.type == 'wizard' %}text-emerald-600{% else %}text-indigo-600{% endif %} font-medium">
+                                {{ 'Wizard' if doc.type == 'wizard' else 'Documento' }}
+                            </span>
+                            {% if doc.uploaded_at %} · {{ doc.uploaded_at }}{% endif %}
+                        </p>
+                    </div>
+                    {% if doc.type == 'document' %}
+                    <button onclick="deleteDocument('{{ doc.name }}', this)"
+                        class="w-8 h-8 rounded-full bg-slate-50 hover:bg-red-50 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
+                        title="Eliminar">
+                        🗑️
+                    </button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="text-center py-10 text-slate-400">
+                <div class="text-4xl mb-3 opacity-50">📭</div>
+                <p class="font-medium">Aún no hay documentos indexados</p>
+                <p class="text-sm mt-1">Sube tu primer PDF o guarda el wizard para empezar</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Nota informativa -->
+    <div class="mt-6 bg-amber-50 border border-amber-100 rounded-2xl p-5 text-sm text-amber-800">
+        <p class="font-bold mb-1">💡 ¿Cómo funciona?</p>
+        <p class="leading-relaxed">
+            Cada documento se divide en fragmentos de ~400 caracteres y se convierte en un vector numérico
+            (embedding). Cuando el asistente recibe una pregunta, busca los fragmentos más similares
+            semánticamente y los usa como contexto antes de responder.
+            Los campos del wizard también se indexan automáticamente al guardar.
+        </p>
+    </div>
+</div>
+
+<script>
+    let selectedFile = null;
+
+    function handleDrop(e) {
+        e.preventDefault();
+        document.getElementById('dropZone').classList.remove('border-indigo-400', 'bg-indigo-50/40');
+        const file = e.dataTransfer.files[0];
+        if (file) processFile(file);
+    }
+
+    function handleFileSelected(input) {
+        if (input.files && input.files[0]) processFile(input.files[0]);
+    }
+
+    function processFile(file) {
+        const allowed = ['pdf', 'txt', 'md'];
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!allowed.includes(ext)) {
+            window.showToast('Solo se permiten PDF, TXT o MD', 'error');
+            return;
+        }
+        if (file.size > 20 * 1024 * 1024) {
+            window.showToast('El fichero supera los 20 MB', 'error');
+            return;
+        }
+        selectedFile = file;
+        document.getElementById('previewName').textContent = file.name;
+        document.getElementById('previewSize').textContent = (file.size / 1024).toFixed(0) + ' KB';
+        document.getElementById('dropZone').classList.add('hidden');
+        document.getElementById('previewSection').classList.remove('hidden');
+    }
+
+    function resetUpload() {
+        selectedFile = null;
+        document.getElementById('fileInput').value = '';
+        document.getElementById('dropZone').classList.remove('hidden');
+        document.getElementById('previewSection').classList.add('hidden');
+        document.getElementById('processingState').classList.add('hidden');
+    }
+
+    async function uploadDocument() {
+        if (!selectedFile) return;
+        document.getElementById('previewSection').classList.add('hidden');
+        document.getElementById('processingState').classList.remove('hidden');
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            const res = await fetch('/knowledge/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                window.showToast('Documento subido — procesando embeddings... 🔄', 'info');
+                // Añadir fila provisional a la lista
+                addProvisionalRow(selectedFile.name);
+                resetUpload();
+            } else {
+                window.showToast('Error: ' + data.error, 'error');
+                resetUpload();
+            }
+        } catch (e) {
+            window.showToast('Error de conexión', 'error');
+            resetUpload();
+        }
+    }
+
+    let _pollTimer = null;
+
+    function addProvisionalRow(filename) {
+        const list = document.getElementById('docList');
+        const empty = list.querySelector('.text-center');
+        if (empty) empty.remove();
+
+        const div = document.createElement('div');
+        div.id = 'provisional-' + CSS.escape(filename);
+        div.className = 'flex items-center gap-4 p-4 rounded-2xl border border-indigo-100 bg-indigo-50/40 animate-pulse';
+        div.innerHTML = `
+            <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-xl flex-shrink-0">⏳</div>
+            <div class="flex-1 min-w-0">
+                <p class="font-bold text-slate-700 text-sm truncate">${escapeHtml(filename)}</p>
+                <p class="text-xs text-indigo-500 mt-0.5">Indexando fragmentos...</p>
+            </div>`;
+        list.prepend(div);
+        pollUntilReady(filename);
+    }
+
+    function pollUntilReady(filename) {
+        if (_pollTimer) clearInterval(_pollTimer);
+        const deadline = Date.now() + 3 * 60 * 1000; // 3 min máximo
+
+        _pollTimer = setInterval(async () => {
+            if (Date.now() > deadline) { clearInterval(_pollTimer); return; }
+            try {
+                const res = await fetch('/knowledge/status');
+                const data = await res.json();
+                const doc = (data.documents || []).find(d => d.name === filename && d.chunks > 0);
+                if (!doc) return;
+
+                clearInterval(_pollTimer);
+                const provisional = document.getElementById('provisional-' + CSS.escape(filename));
+                if (provisional) {
+                    provisional.classList.remove('animate-pulse', 'bg-indigo-50/40', 'border-indigo-100');
+                    provisional.classList.add('border-slate-100');
+                    provisional.innerHTML = `
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-xl flex-shrink-0">📄</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-slate-700 text-sm truncate">${escapeHtml(doc.name)}</p>
+                            <p class="text-xs text-slate-400 mt-0.5">${doc.chunks} fragmentos · <span class="text-indigo-600 font-medium">Documento</span></p>
+                        </div>
+                        <button onclick="deleteDocument('${doc.name}', this)"
+                            class="w-8 h-8 rounded-full bg-slate-50 hover:bg-red-50 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
+                            title="Eliminar">🗑️</button>`;
+                }
+                document.getElementById('chunkCount').textContent = data.total_chunks + ' fragmentos';
+                window.showToast(`✅ "${filename}" indexado — ${doc.chunks} fragmentos`, 'success');
+            } catch (_) {}
+        }, 3000);
+    }
+
+    async function deleteDocument(filename, btn) {
+        if (!confirm(`¿Eliminar "${filename}" de la base de conocimiento?`)) return;
+        btn.disabled = true;
+        btn.textContent = '⏳';
+
+        const formData = new FormData();
+        formData.append('filename', filename);
+
+        try {
+            const res = await fetch('/knowledge/delete', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                btn.closest('[id^="doc-"]')?.remove() || btn.closest('.flex')?.remove();
+                window.showToast(`"${filename}" eliminado (${data.deleted_chunks} fragmentos)`, 'success');
+                // Actualizar contador
+                refreshChunkCount();
+            } else {
+                window.showToast('Error al eliminar', 'error');
+                btn.disabled = false;
+                btn.textContent = '🗑️';
+            }
+        } catch (e) {
+            window.showToast('Error de conexión', 'error');
+            btn.disabled = false;
+            btn.textContent = '🗑️';
+        }
+    }
+
+    async function refreshChunkCount() {
+        try {
+            const res = await fetch('/knowledge/status');
+            const data = await res.json();
+            document.getElementById('chunkCount').textContent = data.total_chunks + ' fragmentos';
+        } catch (_) {}
+    }
+</script>
+{% endblock %}

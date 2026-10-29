@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Reels & Vídeos — Zeptai{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 pb-24 max-w-2xl mx-auto w-full">
+
+    <header class="mb-8">
+        <a href="{{ url_for('web.dashboard') }}" class="text-sm text-slate-400 hover:text-indigo-600 transition-colors">← Inicio</a>
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight mt-2">Reels & Vídeos</h1>
+        <p class="text-slate-500 mt-1 font-medium">De foto de producto a vídeo listo para publicar</p>
+    </header>
+
+    <!-- Hero card -->
+    <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-[2rem] p-8 mb-8 text-white relative overflow-hidden">
+        <div class="relative z-10">
+            <p class="text-purple-200 text-xs font-bold uppercase tracking-widest mb-2">Powered by Runway ML Gen-4 Turbo</p>
+            <h2 class="text-2xl font-bold mb-2">Sube una foto → obtén un reel</h2>
+            <p class="text-purple-100 text-sm leading-relaxed mb-6">
+                La IA anima tu foto y genera un vídeo corto (~5 s) listo para Instagram, TikTok o WhatsApp.
+                Sin edición. Sin apps extra.
+            </p>
+            <ul class="space-y-1.5 text-sm text-purple-100 mb-6">
+                <li class="flex items-center gap-2"><span class="text-white font-bold">✓</span> Formato vertical 9:16</li>
+                <li class="flex items-center gap-2"><span class="text-white font-bold">✓</span> Se guarda en Documentos</li>
+                <li class="flex items-center gap-2"><span class="text-white font-bold">✓</span> Genera en ~1-2 minutos</li>
+            </ul>
+        </div>
+        <div class="absolute -bottom-8 -right-8 w-36 h-36 bg-pink-500 rounded-full blur-3xl opacity-40"></div>
+    </div>
+
+    <!-- Upload zone -->
+    <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 mb-6">
+        <h3 class="font-bold text-slate-800 mb-4">1. Sube tu foto de producto</h3>
+
+        <div id="dropZone"
+            onclick="document.getElementById('photoInput').click()"
+            class="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/40 transition-all group">
+            <div class="text-5xl mb-3 group-hover:scale-110 transition-transform select-none">📸</div>
+            <p class="font-bold text-slate-600 mb-1">Toca para elegir una foto</p>
+            <p class="text-xs text-slate-400">JPG o PNG · máx. 10 MB</p>
+            <input type="file" id="photoInput" class="hidden" accept="image/jpeg,image/png"
+                onchange="handlePhotoSelected(this)">
+        </div>
+
+        <!-- Preview de la imagen seleccionada -->
+        <div id="previewSection" class="hidden mt-5">
+            <div class="flex items-center gap-4 bg-slate-50 rounded-2xl p-4">
+                <img id="previewImg" src="" alt="Preview"
+                    class="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <p id="previewName" class="font-bold text-slate-700 text-sm truncate"></p>
+                    <p id="previewSize" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button onclick="resetUpload()" class="text-slate-300 hover:text-red-400 transition-colors text-xl p-1">✕</button>
+            </div>
+
+            <div class="mt-4">
+                <label for="briefInput" class="block font-bold text-slate-800 text-sm mb-1">2. ¿Qué quieres contar? <span class="font-medium text-slate-400">(opcional)</span></label>
+                <p class="text-xs text-slate-400 mb-2">La IA ya conoce tu sector y tu tono de marca. Aquí puedes dirigir el enfoque del reel.</p>
+                <textarea id="briefInput" rows="2" maxlength="300"
+                    placeholder="Ej: reel para captar clientes de consultoría, tono corporativo y cercano"
+                    class="w-full rounded-2xl border border-slate-200 p-3 text-sm text-slate-700 placeholder-slate-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none resize-none"></textarea>
+            </div>
+
+            <button id="generateBtn" onclick="generateVideo()"
+                class="mt-4 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-purple-200 active:scale-95 text-base">
+                🎬 Generar Reel
+            </button>
+        </div>
+    </div>
+
+    <!-- Estado generando -->
+    <div id="generatingCard" class="hidden bg-white rounded-[2rem] border border-purple-100 shadow-sm p-8 text-center mb-6">
+        <!-- Spinner (visible mientras genera) -->
+        <div id="generatingState">
+            <div class="text-5xl mb-4">⚙️</div>
+            <h3 class="font-bold text-slate-800 mb-2">Generando tu vídeo...</h3>
+            <p class="text-slate-500 text-sm mb-5 leading-relaxed">
+                La IA está animando tu foto. Esto tarda entre 1 y 2 minutos.
+            </p>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-2">
+                <div id="progressBar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
+            </div>
+            <p id="progressLabel" class="text-xs text-slate-400 mb-4">Iniciando generacion...</p>
+        </div>
+        <!-- Resultado (visible cuando termina) -->
+        <div id="videoResult" class="hidden">
+            <div class="text-5xl mb-3">🎉</div>
+            <h3 class="font-bold text-slate-800 mb-3">¡Vídeo listo!</h3>
+            <video id="videoPlayer" controls class="w-full rounded-2xl mb-4 shadow-lg" style="max-height:320px;"></video>
+            <div class="flex gap-3 justify-center">
+                <a id="videoDownloadLink" href="#" download
+                    class="inline-flex items-center gap-2 bg-purple-600 text-white font-bold px-5 py-3 rounded-xl hover:bg-purple-700 transition-colors text-sm">
+                    ⬇️ Descargar
+                </a>
+                <a href="{{ url_for('web.documents_page') }}"
+                    class="inline-flex items-center gap-2 bg-slate-100 text-slate-700 font-bold px-5 py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
+                    📁 Documentos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info extra -->
+    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-5 text-sm text-amber-800">
+        <p class="font-bold mb-1">💡 Consejo</p>
+        <p class="leading-relaxed">Funciona mejor con fotos de producto bien iluminadas, con fondo limpio o de color sólido. Evita imágenes borrosas o con texto.</p>
+    </div>
+
+</div>
+
+<script>
+    let selectedFile = null;
+
+    // Progress animation — simulates realistic runway job progress
+    function startProgressAnimation() {
+        const bar   = document.getElementById('progressBar');
+        const label = document.getElementById('progressLabel');
+        if (!bar) return;
+
+        const steps = [
+            { pct: 8,  delay: 500,   text: 'Subiendo imagen...' },
+            { pct: 22, delay: 2000,  text: 'Analizando producto...' },
+            { pct: 40, delay: 5000,  text: 'Generando prompt cinematico...' },
+            { pct: 58, delay: 12000, text: 'Runway renderizando fotogramas...' },
+            { pct: 72, delay: 25000, text: 'Composicion de movimiento...' },
+            { pct: 85, delay: 45000, text: 'Exportando MP4...' },
+            { pct: 92, delay: 70000, text: 'Guardando en documentos...' },
+        ];
+
+        steps.forEach(({ pct, delay, text }) => {
+            setTimeout(() => {
+                bar.style.width = pct + '%';
+                if (label) label.textContent = text;
+            }, delay);
+        });
+    }
+
+    function handlePhotoSelected(input) {
+        if (!input.files || !input.files[0]) return;
+        selectedFile = input.files[0];
+
+        // Validar tamaño
+        if (selectedFile.size > 10 * 1024 * 1024) {
+            window.showToast("La imagen es demasiado grande (máx. 10 MB)", "error");
+            selectedFile = null;
+            return;
+        }
+
+        // Mostrar preview
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('previewImg').src = e.target.result;
+        };
+        reader.readAsDataURL(selectedFile);
+
+        document.getElementById('previewName').textContent = selectedFile.name;
+        document.getElementById('previewSize').textContent = (selectedFile.size / 1024).toFixed(0) + ' KB';
+
+        document.getElementById('dropZone').classList.add('hidden');
+        document.getElementById('previewSection').classList.remove('hidden');
+    }
+
+    function resetUpload() {
+        selectedFile = null;
+        document.getElementById('photoInput').value = '';
+        const briefEl = document.getElementById('briefInput');
+        if (briefEl) briefEl.value = '';
+        document.getElementById('dropZone').classList.remove('hidden');
+        document.getElementById('previewSection').classList.add('hidden');
+        document.getElementById('generatingCard').classList.add('hidden');
+    }
+
+    async function generateVideo() {
+        if (!selectedFile) return;
+
+        const btn = document.getElementById('generateBtn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Enviando...';
+
+        // Mostrar card de progreso inmediatamente
+        document.getElementById('previewSection').classList.add('hidden');
+        document.getElementById('dropZone').classList.add('hidden');
+        document.getElementById('generatingCard').classList.remove('hidden');
+        startProgressAnimation();
+
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        const briefEl = document.getElementById('briefInput');
+        if (briefEl && briefEl.value.trim()) formData.append('brief', briefEl.value.trim());
+
+        try {
+            const response = await fetch('/generate_video_from_image', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.success && data.url) {
+                // Respuesta síncrona legada (por si se mantiene)
+                showVideoResult(data.url);
+            } else if (data.success && data.processing) {
+                // Generación asíncrona — mostrar estado de espera con notificación
+                showAsyncWaiting();
+            } else {
+                showVideoError(data.error || 'Error desconocido');
+                btn.disabled = false;
+                btn.textContent = '🎬 Generar Reel';
+            }
+        } catch (e) {
+            showVideoError('Error de conexión');
+            btn.disabled = false;
+            btn.textContent = '🎬 Generar Reel';
+        }
+    }
+
+    function showVideoResult(url) {
+        // Completar barra al 100%
+        const bar = document.getElementById('progressBar');
+        const label = document.getElementById('progressLabel');
+        if (bar) bar.style.width = '100%';
+        if (label) label.textContent = '¡Listo!';
+
+        // Ocultar spinner, mostrar vídeo
+        document.getElementById('generatingState').classList.add('hidden');
+        const resultDiv = document.getElementById('videoResult');
+        resultDiv.classList.remove('hidden');
+
+        const player = document.getElementById('videoPlayer');
+        const dlLink = document.getElementById('videoDownloadLink');
+        player.src = url;
+        dlLink.href = url;
+
+        window.showToast("🎉 ¡Vídeo generado!", "success");
+    }
+
+    function showAsyncWaiting() {
+        // Runway genera en background — completar la barra y mostrar mensaje de espera
+        const bar = document.getElementById('progressBar');
+        const label = document.getElementById('progressLabel');
+        if (bar) bar.style.width = '100%';
+        if (label) label.textContent = '¡Enviado! Generando en segundo plano...';
+
+        document.getElementById('generatingState').classList.add('hidden');
+        const resultDiv = document.getElementById('videoResult');
+        resultDiv.classList.remove('hidden');
+        resultDiv.innerHTML = `
+            <div class="text-5xl mb-3">⏳</div>
+            <h3 class="font-bold text-slate-800 mb-2">Generando tu vídeo...</h3>
+            <p class="text-slate-500 text-sm leading-relaxed mb-5">
+                Runway ML está procesando tu foto. Esto tarda entre 1 y 2 minutos.<br>
+                <strong>Puedes cerrar esta pantalla</strong> — te avisaremos con una notificación cuando esté listo en <a href="/documents" class="text-purple-600 underline font-bold">Documentos</a>.
+            </p>
+            <a href="/documents" class="inline-flex items-center gap-2 bg-slate-100 text-slate-700 font-bold px-5 py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
+                📁 Ir a Documentos
+            </a>`;
+        window.showToast("Vídeo en proceso — te avisamos cuando esté listo 🎬", "info");
+    }
+
+    function showVideoError(msg) {
+        document.getElementById('generatingCard').classList.add('hidden');
+        document.getElementById('dropZone').classList.remove('hidden');
+        window.showToast("❌ " + msg, "error");
+    }
+</script>
+{% endblock %}

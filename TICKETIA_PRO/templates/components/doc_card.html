@@ -1,0 +1,67 @@
+<div
+    class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group h-full animate-scale-in">
+
+    <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0
+                {% if 'pdf' in doc.file_path %} bg-red-50 text-red-500
+                {% elif 'png' in doc.file_path or 'jpg' in doc.file_path %} bg-purple-50 text-purple-500
+                {% elif 'pptx' in doc.file_path %} bg-orange-50 text-orange-500
+                {% elif 'mp4' in doc.file_path %} bg-pink-50 text-pink-500
+                {% elif 'txt' in doc.file_path %} bg-gray-50 text-gray-400
+                {% else %} bg-slate-50 text-slate-500 {% endif %}">
+                {% if 'pdf' in doc.file_path %}📄{% elif 'png' in doc.file_path or 'jpg' in doc.file_path %}🖼️{% elif
+                'pptx' in doc.file_path %}📊{% elif 'mp4' in doc.file_path %}🎬{% elif 'txt' in doc.file_path %}📝{%
+                else %}📁{% endif %}
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm line-clamp-1" title="{{ doc.client_name or 'Sin Título' }}">
+                    {{ doc.client_name or 'Documento' }}
+                </h3>
+                <p class="text-xs text-slate-400 font-mono">{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            </div>
+        </div>
+        <!-- TAG only if strictly necessary, visuals are often enough -->
+    </div>
+
+    <!-- Preview for Images -->
+    {% if 'png' in doc.file_path or 'jpg' in doc.file_path %}
+    <div class="mb-4 h-32 rounded-lg bg-slate-50 overflow-hidden relative border border-slate-100">
+        <img src="{{ doc.file_path }}" alt="Preview"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+    </div>
+    {% endif %}
+
+    <!-- Preview for Videos -->
+    {% if 'mp4' in doc.file_path %}
+    <div
+        class="mb-4 h-32 rounded-lg bg-black overflow-hidden relative border border-slate-100 group-hover:shadow-lg transition-all">
+        <video src="{{ doc.file_path }}"
+            class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" muted loop
+            onmouseover="this.play()" onmouseout="this.pause()"></video>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span class="text-white text-3xl opacity-80">▶️</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex gap-2 mt-auto">
+        <a href="{{ doc.file_path }}" download
+            class="w-10 flex items-center justify-center text-xs font-bold py-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors"
+            title="Descargar">
+            ⬇️
+        </a>
+        <a href="{{ doc.file_path }}" target="_blank"
+            class="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100 transition-colors">
+            Ver Documento
+        </a>
+        {% if can_delete %}
+        <button onclick="deleteDocument({{ doc.id }}, this)"
+            class="w-10 flex items-center justify-center text-xs font-bold py-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 border border-red-100 transition-colors"
+            title="Eliminar">
+            🗑️
+        </button>
+        {% endif %}
+    </div>
+
+</div>
