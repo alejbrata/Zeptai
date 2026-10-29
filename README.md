@@ -195,3 +195,13 @@ El workflow `.github/workflows/mlops.yml` se ejecuta en cada push a `main`, `dev
 ## Autor
 
 **Alejandro Bravo** — TFM Máster en Ingeniería y Desarrollo de Soluciones de IA Generativa · 2026
+
+---
+
+## Licencia
+
+Copyright (C) 2026 Alejandro Bravo
+
+Este proyecto se distribuye bajo la licencia **GNU Affero General Public License v3.0** (AGPL-3.0). Consulta el fichero [LICENSE](LICENSE).
+
+Se usa AGPL-3.0 porque la ingesta de documentos depende de [pymupdf4llm](https://github.com/pymupdf/pymupdf4llm), que se distribuye bajo esa misma licencia. Puedes usar, modificar y redistribuir el código, siempre que publiques tus cambios bajo la misma licencia, también si ofreces la aplicación como servicio a través de una red.
