@@ -79,8 +79,8 @@ APIs Externas:
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/alejbrata/ticketia.git
-cd ticketia
+git clone https://github.com/alejbrata/Zeptai.git
+cd Zeptai
 
 # 2. Crear el fichero de entorno
 cp .env.example .env

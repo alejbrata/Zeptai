@@ -8,8 +8,8 @@
 ## 2. Instalación Local
 ```bash
 # Clonar repo
-git clone https://github.com/alejbrata/ticketia.git
-cd ticketia
+git clone https://github.com/alejbrata/Zeptai.git
+cd Zeptai
 
 # Crear entorno virtual
 python3 -m venv venv
